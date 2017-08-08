@@ -61,7 +61,7 @@ typedef uint16_t line_t;
 boolean autoCycle = true; // Set to true to cycle images by default
 uint32_t CYCLE_TIME = 12; // Time, in seconds, between auto-cycle images
 
-int RECV_PIN = 36;
+int RECV_PIN = 35;
 IRrecv irrecv(RECV_PIN);
 decode_results results;
 
@@ -80,16 +80,16 @@ decode_results results;
 //   ENTER/SAVE:  0xFD906F     9:      0xFD58A7
 //   Back:        0xFD708F
 
-#define BTN_BRIGHT_UP    0xFF3AC5
-#define BTN_BRIGHT_DOWN  0xFFBA45
+#define BTN_BRIGHT_UP    0x820
+#define BTN_BRIGHT_DOWN  0x821
 #define BTN_RESTART      0xFD807F
 #define BTN_BATTERY      0xFD20DF
-#define BTN_FASTER       0xFD805F
-#define BTN_SLOWER       0xFDB04F
-#define BTN_OFF          0xFD609F
-#define BTN_PATTERN_PREV 0xFD10EF
-#define BTN_PATTERN_NEXT 0xFD50AF
-#define BTN_AUTOPLAY     0XFD906F
+#define BTN_FASTER       0xFFE817
+#define BTN_SLOWER       0xFFC837
+#define BTN_OFF          0x80C
+#define BTN_PATTERN_PREV 0x811
+#define BTN_PATTERN_NEXT 0x810
+#define BTN_AUTOPLAY     0X80D
 #define BTN_NONE         -1
 
 // -------------------------------------------------------------------------
@@ -144,7 +144,7 @@ const uint16_t PROGMEM lineTable[] = { // 375 * 2^(n/3)
   1000000L / 1500  // 1500 lines/sec = fastest
 };
 uint8_t  lineIntervalIndex = 3;
-uint16_t lineInterval      = 1000000L / 750;
+uint16_t lineInterval      = 1000000L / 700;
 
 void imageInit() { // Initialize global image state for current imageNumber
   imageType    = images[imageNumber].type;
@@ -186,7 +186,6 @@ void loop() {
   // Transfer one scanline from pixel data to LED strip:
 
   switch(imageType) {
-
     case PALETTE1: { // 1-bit (2 color) palette-based image
       uint8_t  pixelNum = 0, byteNum, bitNum, pixels, idx,
               *ptr = (uint8_t *)&imagePixels[imageLine * NUM_LEDS / 8];
@@ -244,8 +243,11 @@ void loop() {
   }
 
   if(++imageLine >= imageLines) imageLine = 0; // Next scanline, wrap around
-  IRinterrupt();
+
+//  Fire(60, 80, 15);
+
   while(((t = micros()) - lastLineTime) < lineInterval) {
+//    Serial.println(results.value, HEX);
     if(results.value != BTN_NONE) {
       if(!strip.getBrightness()) { // If strip is off...
         // Set brightness to last level
@@ -296,12 +298,80 @@ void loop() {
 
   strip.show(); // Refresh LEDs
   lastLineTime = t;
+
+  IRinterrupt();
 }
 
 void IRinterrupt() {
   if (irrecv.decode(&results)) {
+//    Serial.println(results.value);
     Serial.println(results.value, HEX);
     irrecv.resume(); // Receive the next value
   }
 }
+
+/* Fire */
+void setPixelHeatColor (int Pixel, byte temperature) {
+  // Scale 'heat' down from 0-255 to 0-191
+  byte t192 = round((temperature / 255.0) * 191);
+
+  // calculate ramp up from
+  byte heatramp = t192 & 0x3F; // 0..63
+  heatramp <<= 2; // scale up to 0..252
+
+  // figure out which third of the spectrum we're in:
+  if ( t192 > 0x80) {                    // hottest
+    setPixel(Pixel, 255, 255, heatramp);
+  } else if ( t192 > 0x40 ) {            // middle
+    setPixel(Pixel, 255, heatramp, 0);
+  } else {                               // coolest
+    setPixel(Pixel, heatramp, 0, 0);
+  }
+}
+
+void Fire(int Cooling, unsigned int Sparking, int SpeedDelay) {
+  static byte heat[NUM_LEDS];
+  int cooldown;
+
+  // Step 1.  Cool down every cell a little
+  for ( int i = 0; i < NUM_LEDS; i++) {
+    cooldown = random(0, ((Cooling * 10) / NUM_LEDS) + 2);
+
+    if (cooldown > heat[i]) {
+      heat[i] = 0;
+    } else {
+      heat[i] = heat[i] - cooldown;
+    }
+  }
+
+  // Step 2.  Heat from each cell drifts 'up' and diffuses a little
+  for ( int k = NUM_LEDS - 1; k >= 2; k--) {
+    heat[k] = (heat[k - 1] + heat[k - 2] + heat[k - 2]) / 3;
+  }
+
+  // Step 3.  Randomly ignite new 'sparks' near the bottom
+  if ( random(255) < Sparking ) {
+    int y = random(7);
+    heat[y] = heat[y] + random(160, 255);
+    //heat[y] = random(160,255);
+  }
+
+  // Step 4.  Convert heat to LED colors
+  for ( int j = 0; j < NUM_LEDS; j++) {
+    setPixelHeatColor(j, heat[j] );
+  }
+
+  showStrip();
+  delay(SpeedDelay);
+}
+
+
+void showStrip() {
+  strip.show();
+}
+
+void setPixel(int Pixel, byte red, byte green, byte blue) {
+  strip.setPixelColor(Pixel, strip.Color(red, green, blue));
+}
+
 
