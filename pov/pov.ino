@@ -30,8 +30,8 @@
 
 #include <Arduino.h>
 #include <Adafruit_DotStar.h>
-#include <avr/power.h>
-#include <avr/sleep.h>
+//#include <avr/power.h>
+//#include <avr/sleep.h>
 #include <IRremote.h>
 #include <SPI.h>
 
@@ -61,7 +61,7 @@ typedef uint16_t line_t;
 boolean autoCycle = true; // Set to true to cycle images by default
 uint32_t CYCLE_TIME = 12; // Time, in seconds, between auto-cycle images
 
-int RECV_PIN = 35;
+int RECV_PIN = 30;
 IRrecv irrecv(RECV_PIN);
 decode_results results;
 
@@ -80,16 +80,32 @@ decode_results results;
 //   ENTER/SAVE:  0xFD906F     9:      0xFD58A7
 //   Back:        0xFD708F
 
-#define BTN_BRIGHT_UP    0x820
-#define BTN_BRIGHT_DOWN  0x821
+// 7 Key
+//#define BTN_BRIGHT_UP    0x820
+//#define BTN_BRIGHT_DOWN  0x821
+//#define BTN_RESTART      0xFD807F
+//#define BTN_BATTERY      0xFD20DF
+//#define BTN_FASTER       0xFFE817
+//#define BTN_SLOWER       0xFFC837
+//#define BTN_OFF          0x80C
+//#define BTN_PATTERN_PREV 0x811
+//#define BTN_PATTERN_NEXT 0x810
+//#define BTN_AUTOPLAY     0X80D
+//#define BTN_SWITCH_MODE  0X80B
+//#define BTN_NONE         -1
+
+// 44 Key
+#define BTN_BRIGHT_UP    0xFF3AC5
+#define BTN_BRIGHT_DOWN  0xFFBA45
 #define BTN_RESTART      0xFD807F
 #define BTN_BATTERY      0xFD20DF
 #define BTN_FASTER       0xFFE817
 #define BTN_SLOWER       0xFFC837
 #define BTN_OFF          0x80C
-#define BTN_PATTERN_PREV 0x811
-#define BTN_PATTERN_NEXT 0x810
-#define BTN_AUTOPLAY     0X80D
+#define BTN_PATTERN_PREV 0xFF08F7
+#define BTN_PATTERN_NEXT 0xFF28D7
+#define BTN_AUTOPLAY     0XFFF00F
+#define BTN_SWITCH_MODE  0XFF827D
 #define BTN_NONE         -1
 
 // -------------------------------------------------------------------------
@@ -106,6 +122,8 @@ void     imageInit(void),
          IRinterrupt(void);
 uint16_t readVoltage(void);
 
+boolean povMode = false;
+
 void setup() {
   strip.begin(); // Allocate DotStar buffer, init SPI
   strip.clear(); // Make sure strip is clear
@@ -116,13 +134,78 @@ void setup() {
   irrecv.enableIRIn(); // Start the receiver
 }
 
+void setPixel(int Pixel, byte red, byte green, byte blue) {
+  strip.setPixelColor(Pixel, strip.Color(red, green, blue));
+}
+
+void showStrip() {
+  strip.show();
+}
+
+// Input a value 0 to 255 to get a color value.
+// The colours are a transition r - g - b - back to r.
+uint32_t Wheel(byte WheelPos) {
+    WheelPos = 255 - WheelPos;
+    if(WheelPos < 85) {
+  //return leds.Color(255 - WheelPos * 3, 0, WheelPos * 3);
+  return ((((uint32_t)(255 - WheelPos * 3)) << 16) + (WheelPos * 3));
+    }
+    if(WheelPos < 170) {
+  WheelPos -= 85;
+  //return leds.Color(0, WheelPos * 3, 255 - WheelPos * 3);
+  return ((((uint32_t)(WheelPos * 3)) << 8) + (255 - WheelPos * 3));
+    }
+    WheelPos -= 170;
+    //return leds.Color(WheelPos * 3, 255 - WheelPos * 3, 0);
+    return ((((uint32_t)(WheelPos * 3)) << 16) + (((uint32_t)(255 - WheelPos * 3)) << 8));
+}
+
+
+void doubleConverge(bool trail, uint8_t wait, bool rev=false) {
+    static uint8_t hue;
+    int r = random(255);
+    int g = random(255);
+    int b = random(255);
+    
+    for(uint16_t i = 0; i < NUM_LEDS/2 + 4; i++) {
+  // fade everything out
+  //leds.fadeToBlackBy(60);
+
+      
+    
+      if (i < NUM_LEDS/2) {
+        if (!rev) {
+          setPixel(i, r, g, b);
+          setPixel(NUM_LEDS - 1 - i, r, g, b);
+        } else {
+          setPixel(NUM_LEDS/2 -1 -i, r, g, b);
+          setPixel(NUM_LEDS/2 + i, r, g, b);
+        }
+      }
+      if (!trail && i>3) {
+       if (!rev) {
+          setPixel(i - 4, 0, 0, 0);
+          setPixel(NUM_LEDS - 1 - i + 4, 0, 0, 0);
+        } else {
+          setPixel(NUM_LEDS/2 -1 -i +4, 0, 0, 0);
+          setPixel(NUM_LEDS/2 + i -4, 0, 0, 0);
+        }
+      }
+
+      showStrip();
+      delay(wait/3);
+    }
+}
 
 // GLOBAL STATE STUFF ------------------------------------------------------
+
+int NUM_PATTERNS = 3;
 
 uint32_t lastImageTime = 0L, // Time of last image change
          lastLineTime  = 0L;
 uint8_t  imageNumber   = 0,  // Current image being displayed
          imageType,          // Image type: PALETTE[1,4,8] or TRUECOLOR
+         patternNumber = 1,  // Current pattern being displayed
         *imagePalette,       // -> palette data in PROGMEM
         *imagePixels,        // -> pixel data in PROGMEM
          palette[16][3];     // RAM-based color table for 1- or 4-bit images
@@ -144,7 +227,7 @@ const uint16_t PROGMEM lineTable[] = { // 375 * 2^(n/3)
   1000000L / 1500  // 1500 lines/sec = fastest
 };
 uint8_t  lineIntervalIndex = 3;
-uint16_t lineInterval      = 1000000L / 700;
+uint32_t lineInterval      = 1000000L / 750;
 
 void imageInit() { // Initialize global image state for current imageNumber
   imageType    = images[imageNumber].type;
@@ -171,83 +254,132 @@ void prevImage(void) {
   imageInit();
 }
 
+void nextPattern() {
+  if(++patternNumber >= NUM_PATTERNS) patternNumber = 0;
+  Serial.println(patternNumber);
+}
+
+void prevPattern() {
+  patternNumber = patternNumber ? patternNumber - 1 : NUM_PATTERNS - 1;
+  Serial.println(patternNumber);
+}
+
 // MAIN LOOP ---------------------------------------------------------------
 
 void loop() {
   uint32_t t = millis(); // Current time, milliseconds
+//  Serial.println(imageType);
+  
+//  strip.setPixelColor(3, 255, 0, 0);
 
-  if(autoCycle) {
-    if((t - lastImageTime) >= (CYCLE_TIME * 1000L)) nextImage();
-    // CPU clocks vary slightly; multiple poi won't stay in perfect sync.
-    // Keep this in mind when using auto-cycle mode, you may want to cull
-    // the image selection to avoid unintentional regrettable combinations.
-  }
-
-  // Transfer one scanline from pixel data to LED strip:
-
-  switch(imageType) {
-    case PALETTE1: { // 1-bit (2 color) palette-based image
-      uint8_t  pixelNum = 0, byteNum, bitNum, pixels, idx,
-              *ptr = (uint8_t *)&imagePixels[imageLine * NUM_LEDS / 8];
-      for(byteNum = NUM_LEDS/8; byteNum--; ) { // Always padded to next byte
-        pixels = *ptr++;                       // 8 pixels of data (pixel 0 = LSB)
-        for(bitNum = 8; bitNum--; pixels >>= 1) {
-          idx = pixels & 1; // Color table index for pixel (0 or 1)
-          strip.setPixelColor(pixelNum++,
-            palette[idx][0], palette[idx][1], palette[idx][2]);
+//  if(autoCycle) {
+//    if((t - lastImageTime) >= (CYCLE_TIME * 1000L)) nextImage();
+//    // CPU clocks vary slightly; multiple poi won't stay in perfect sync.
+//    // Keep this in mind when using auto-cycle mode, you may want to cull
+//    // the image selection to avoid unintentional regrettable combinations.
+//  }
+//
+//  // Transfer one scanline from pixel data to LED strip:
+  if (povMode) {
+    switch(imageType) {
+      case PALETTE1: { // 1-bit (2 color) palette-based image
+        uint8_t  pixelNum = 0, byteNum, bitNum, pixels, idx,
+                *ptr = (uint8_t *)&imagePixels[imageLine * NUM_LEDS / 8];
+        for(byteNum = NUM_LEDS/8; byteNum--; ) { // Always padded to next byte
+          pixels = *ptr++;                       // 8 pixels of data (pixel 0 = LSB)
+          for(bitNum = 8; bitNum--; pixels >>= 1) {
+            idx = pixels & 1; // Color table index for pixel (0 or 1)
+            strip.setPixelColor(pixelNum++,
+              palette[idx][0], palette[idx][1], palette[idx][2]);
+          }
         }
+        break;
       }
-      break;
+  
+      case PALETTE4: { // 4-bit (16 color) palette-based image
+        uint8_t  pixelNum, p1, p2,
+                *ptr = (uint8_t *)&imagePixels[imageLine * NUM_LEDS / 2];
+        for(pixelNum = 0; pixelNum < NUM_LEDS; ) {
+          p2  = *ptr++;  // Data for two pixels...
+          p1  = p2 >> 4; // Shift down 4 bits for first pixel
+          p2 &= 0x0F;    // Mask out low 4 bits for second pixel
+          strip.setPixelColor(pixelNum++,
+            palette[p1][0], palette[p1][1], palette[p1][2]);
+          strip.setPixelColor(pixelNum++,
+            palette[p2][0], palette[p2][1], palette[p2][2]);
+        }
+        break;
+      }
+  
+      case PALETTE8: { // 8-bit (256 color) PROGMEM-palette-based image
+        uint16_t  o;
+        uint8_t   pixelNum,
+                 *ptr = (uint8_t *)&imagePixels[imageLine * NUM_LEDS];
+        for(pixelNum = 0; pixelNum < NUM_LEDS; pixelNum++) {
+          o = *ptr++ * 3; // Offset into imagePalette
+          strip.setPixelColor(pixelNum,
+            imagePalette[o],
+            imagePalette[o + 1],
+            imagePalette[o + 2]);
+        }
+        break;
+      }
+  
+      case TRUECOLOR: { // 24-bit ('truecolor') image (no palette)
+        uint8_t  pixelNum, r, g, b,
+                *ptr = (uint8_t *)&imagePixels[imageLine * NUM_LEDS * 3];
+        for(pixelNum = 0; pixelNum < NUM_LEDS; pixelNum++) {
+          r = *ptr++;
+          g = *ptr++;
+          b = *ptr++;
+          strip.setPixelColor(pixelNum, r, g, b);
+        }
+        break;
+      }
     }
-
-    case PALETTE4: { // 4-bit (16 color) palette-based image
-      uint8_t  pixelNum, p1, p2,
-              *ptr = (uint8_t *)&imagePixels[imageLine * NUM_LEDS / 2];
-      for(pixelNum = 0; pixelNum < NUM_LEDS; ) {
-        p2  = *ptr++;  // Data for two pixels...
-        p1  = p2 >> 4; // Shift down 4 bits for first pixel
-        p2 &= 0x0F;    // Mask out low 4 bits for second pixel
-        strip.setPixelColor(pixelNum++,
-          palette[p1][0], palette[p1][1], palette[p1][2]);
-        strip.setPixelColor(pixelNum++,
-          palette[p2][0], palette[p2][1], palette[p2][2]);
-      }
-      break;
+  
+    if(++imageLine >= imageLines) imageLine = 0; // Next scanline, wrap around
+  } else {
+    switch(patternNumber) {
+      case 0:
+        Sparkle(random(255), random(255), random(255), 0);
+        break;
+      case 1:
+        Fire(50, 80, 15);
+        break;
+      case 2:
+        doubleConverge(false, 0);
+        break;
     }
+  }
+//    Serial.println("test");
+  IRinterrupt();
+//  boolean test;
+//  if (povMode) {
+//    test = ((t = micros()) - lastLineTime) < lineInterval;
+//  } else {
+//    test = true;
+//  }
 
-    case PALETTE8: { // 8-bit (256 color) PROGMEM-palette-based image
-      uint16_t  o;
-      uint8_t   pixelNum,
-               *ptr = (uint8_t *)&imagePixels[imageLine * NUM_LEDS];
-      for(pixelNum = 0; pixelNum < NUM_LEDS; pixelNum++) {
-        o = *ptr++ * 3; // Offset into imagePalette
-        strip.setPixelColor(pixelNum,
-          imagePalette[o],
-          imagePalette[o + 1],
-          imagePalette[o + 2]);
-      }
-      break;
-    }
-
-    case TRUECOLOR: { // 24-bit ('truecolor') image (no palette)
-      uint8_t  pixelNum, r, g, b,
-              *ptr = (uint8_t *)&imagePixels[imageLine * NUM_LEDS * 3];
-      for(pixelNum = 0; pixelNum < NUM_LEDS; pixelNum++) {
-        r = *ptr++;
-        g = *ptr++;
-        b = *ptr++;
-        strip.setPixelColor(pixelNum, r, g, b);
-      }
-      break;
+  if (povMode) {
+//    Serial.println("pov mode on");
+    lineInterval = 1000000L / 750;
+  } else {
+//    Serial.println("pattern mode on");
+    lineInterval = 18000;
+    if (patternNumber == 2) {
+      lineInterval = 110000;
+    } else if (patternNumber == 0) {
+      lineInterval = 1000000L / 350;
     }
   }
 
-  if(++imageLine >= imageLines) imageLine = 0; // Next scanline, wrap around
-
-//  Fire(60, 80, 15);
-
+// Debug timing
+//  Serial.println(t = micros() - lastLineTime);
+//  Serial.println(lineInterval);
+//  Serial.println();
+  
   while(((t = micros()) - lastLineTime) < lineInterval) {
-//    Serial.println(results.value, HEX);
     if(results.value != BTN_NONE) {
       if(!strip.getBrightness()) { // If strip is off...
         // Set brightness to last level
@@ -264,16 +396,6 @@ void loop() {
           if(bLevel)
             strip.setBrightness(brightness[--bLevel]);
           break;
-         case BTN_FASTER:
-          CYCLE_TIME++;
-          if(lineIntervalIndex < (sizeof(lineTable) / sizeof(lineTable[0]) - 1))
-           lineInterval = lineTable[++lineIntervalIndex];
-          break;
-         case BTN_SLOWER:
-         if(CYCLE_TIME > 0) CYCLE_TIME--;
-          if(lineIntervalIndex)
-           lineInterval = lineTable[--lineIntervalIndex];
-          break;
          case BTN_RESTART:
           imageNumber = 0;
           imageInit();
@@ -282,10 +404,27 @@ void loop() {
           strip.setBrightness(0);
           break;
          case BTN_PATTERN_PREV:
-          prevImage();
+          if (povMode) {
+            prevImage();
+          } else {
+            prevPattern();
+          }
           break;
          case BTN_PATTERN_NEXT:
-          nextImage();
+          if (povMode) {
+            nextImage();
+          } else {
+            nextPattern();
+          }
+          
+          break;
+         case BTN_SWITCH_MODE:
+          if (povMode) {
+            Serial.println("POV mode");
+          } else {
+            Serial.println("Pattern mode");
+          }
+          povMode = !povMode;
           break;
          case BTN_AUTOPLAY:
           autoCycle = !autoCycle;
@@ -297,16 +436,43 @@ void loop() {
   }
 
   strip.show(); // Refresh LEDs
-  lastLineTime = t;
-
-  IRinterrupt();
+  lastLineTime = t + 100;
+//  Serial.println("Meow");
 }
 
 void IRinterrupt() {
   if (irrecv.decode(&results)) {
-//    Serial.println(results.value);
     Serial.println(results.value, HEX);
     irrecv.resume(); // Receive the next value
+  }
+}
+
+// Patterns
+
+void Sparkle(byte red, byte green, byte blue, int SpeedDelay) {
+//  int pixel = random(NUM_LEDS);
+//  int jump = random(NUM_LEDS);
+//  setPixel(pixel, red, green, blue);
+//  setPixel(pixel+jump, random(255), random(255), random(255));
+//  setPixel(pixel-jump, random(255), random(255), random(255));
+//  showStrip();
+//  delay(SpeedDelay);
+//  setPixel(pixel, 0, 0, 0);
+//  setPixel(pixel+jump, 0, 0, 0);
+//  setPixel(pixel-jump, 0, 0, 0);
+
+  int pixel = random(NUM_LEDS);
+  setPixel(pixel, red, green, blue);
+  showStrip();
+  delay(SpeedDelay);
+  setPixel(pixel, 0, 0, 0);
+}
+
+void colorWipe(uint32_t c, uint8_t wait) {
+  for(uint16_t i=0; i<strip.numPixels(); i++) {
+    strip.setPixelColor(i, c);
+    strip.show();
+    delay(wait);
   }
 }
 
@@ -325,7 +491,7 @@ void setPixelHeatColor (int Pixel, byte temperature) {
   } else if ( t192 > 0x40 ) {            // middle
     setPixel(Pixel, 255, heatramp, 0);
   } else {                               // coolest
-    setPixel(Pixel, heatramp, 0, 0);
+    setPixel(Pixel, 0, 0, heatramp);
   }
 }
 
@@ -333,7 +499,7 @@ void Fire(int Cooling, unsigned int Sparking, int SpeedDelay) {
   static byte heat[NUM_LEDS];
   int cooldown;
 
-  // Step 1.  Cool down every cell a little
+  // Step 1.  Cool down ever1000000L / 750;y cell a little
   for ( int i = 0; i < NUM_LEDS; i++) {
     cooldown = random(0, ((Cooling * 10) / NUM_LEDS) + 2);
 
@@ -364,14 +530,4 @@ void Fire(int Cooling, unsigned int Sparking, int SpeedDelay) {
   showStrip();
   delay(SpeedDelay);
 }
-
-
-void showStrip() {
-  strip.show();
-}
-
-void setPixel(int Pixel, byte red, byte green, byte blue) {
-  strip.setPixelColor(Pixel, strip.Color(red, green, blue));
-}
-
 
