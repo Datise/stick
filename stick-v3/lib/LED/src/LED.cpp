@@ -1,0 +1,223 @@
+#include <LED.h>
+#include <pov.h>
+
+#include <FastLED.h>
+
+
+CRGBArray<NUM_LEDS> leds;
+
+// GLOBAL STATE STUFF ------------------------------------------------------
+
+uint32_t lastImageTime = 0L, // Time of last image change
+         lastLineTime  = 0L;
+uint8_t  imageNumber   = 0,  // Current image being displayed
+         imageType,          // Image type: PALETTE[1,4,8] or TRUECOLOR
+        *imagePalette,       // -> palette data in PROGMEM
+        *imagePixels,        // -> pixel data in PROGMEM
+         palette[16][3];     // RAM-based color table for 1- or 4-bit images
+line_t   imageLines,         // Number of lines in active image
+         imageLine;          // Current line number in image
+  
+const uint8_t PROGMEM brightness[] = { 4, 24, 48, 72,  98, 128, 192, 224, 255 };
+uint8_t bLevel = sizeof(brightness) - 1;
+
+// Microseconds per line for various speed settings
+const uint16_t PROGMEM lineTable[] = { // 375 * 2^(n/3)
+  1000000L /  375, // 375 lines/sec = slowest
+  1000000L /  472,
+  1000000L /  595,
+  1000000L /  750, // 750 lines/sec = mid
+  1000000L /  945,
+  1000000L / 1191,
+  1000000L / 1500  // 1500 lines/sec = fastest
+};
+uint8_t  lineIntervalIndex = 3;
+uint32_t lineInterval      = 1000000L /  595;
+
+LED::LED() {};
+
+void LED::init() {
+  if (LED_DEBUG) Serial.println("Init FastLED");
+  FastLED.addLeds<APA102, LED_DATA_PIN, LED_CLOCK_PIN, BGR>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
+  if (LED_DEBUG) Serial.println("FastLED Ready");
+
+  imageInit(); // Initialize pointers for default image
+}
+
+// Utility
+void LED::setPixel(int pixelNum, int r, int g, int b) {
+  leds[pixelNum].r = r;
+  leds[pixelNum].g = g;
+  leds[pixelNum].b = b;
+}
+
+ void LED::showStrip() {
+  FastLED.show();
+}
+
+//--- Patterns ---
+void LED::convergeIn() {
+  static uint8_t hue;
+  for(int i = 0; i < NUM_LEDS/2; i++) {
+    // fade everything out
+    leds.fadeToBlackBy(40);
+
+    // let's set an led value
+    leds[i] = CHSV(hue++,255,255);
+
+    // now, let's first 20 leds to the top 20 leds, 
+    leds(NUM_LEDS/2,NUM_LEDS-1) = leds(NUM_LEDS/2 - 1 ,0);
+    FastLED.delay(33);
+  }
+}
+
+/* Fire */
+void LED::setPixelHeatColor(int Pixel, byte temperature) {
+  // Scale 'heat' down from 0-255 to 0-191
+  byte t192 = round((temperature / 255.0) * 191);
+
+  // calculate ramp up from
+  byte heatramp = t192 & 0x3F; // 0..63
+  heatramp <<= 2; // scale up to 0..252
+
+  // figure out which third of the spectrum we're in:
+  if ( t192 > 0x80) {                    // hottest
+    setPixel(Pixel, 255, 255, heatramp);
+  } else if ( t192 > 0x40 ) {            // middle
+    setPixel(Pixel, 255, heatramp, 0);
+  } else {                               // coolest
+    setPixel(Pixel, 0, 0, heatramp);
+  }
+}
+
+void LED::fire(int Cooling, unsigned int Sparking, int SpeedDelay) {
+  static byte heat[NUM_LEDS];
+  int cooldown;
+
+  // Step 1.  Cool down ever1000000L / 750;y cell a little
+  for ( int i = 0; i < NUM_LEDS; i++) {
+    cooldown = random(0, ((Cooling * 10) / NUM_LEDS) + 2);
+
+    if (cooldown > heat[i]) {
+      heat[i] = 0;
+    } else {
+      heat[i] = heat[i] - cooldown;
+    }
+  }
+
+  // Step 2.  Heat from each cell drifts 'up' and diffuses a little
+  for ( int k = NUM_LEDS - 1; k >= 2; k--) {
+    heat[k] = (heat[k - 1] + heat[k - 2] + heat[k - 2]) / 3;
+  }
+
+  // Step 3.  Randomly ignite new 'sparks' near the bottom
+  if ( random(255) < Sparking ) {
+    int y = random(7);
+    heat[y] = heat[y] + random(160, 255);
+    //heat[y] = random(160,255);
+  }
+
+  // Step 4.  Convert heat to LED colors
+  for ( int j = 0; j < NUM_LEDS; j++) {
+    setPixelHeatColor(j, heat[j] );
+  }
+
+  showStrip();
+  delay(SpeedDelay);
+}
+
+void LED::sparkle(byte red, byte green, byte blue, int SpeedDelay) {
+  int pixel = random(NUM_LEDS);
+  setPixel(pixel, red, green, blue);
+  showStrip();
+  delay(SpeedDelay);
+  setPixel(pixel, 0, 0, 0);
+}
+
+//--- POV ---
+void LED::imageInit() { // Initialize global image state for current imageNumber
+  imageType    = pgm_read_byte(&images[imageNumber].type);
+  #ifdef __AVR_ATtiny85__
+    imageLines   = pgm_read_byte(&images[imageNumber].lines);
+  #else
+    imageLines   = pgm_read_word(&images[imageNumber].lines);
+  #endif
+  imageLine    = 0;
+  imagePalette = (uint8_t *)pgm_read_word(&images[imageNumber].palette);
+  imagePixels  = (uint8_t *)pgm_read_word(&images[imageNumber].pixels);
+  // 1- and 4-bit images have their color palette loaded into RAM both for
+  // faster access and to allow dynamic color changing.  Not done w/8-bit
+  // because that would require inordinate RAM (328P could handle it, but
+  // I'd rather keep the RAM free for other features in the future).
+  if(imageType == PALETTE1)      memcpy_P(palette, imagePalette,  2 * 3);
+  else if(imageType == PALETTE4) memcpy_P(palette, imagePalette, 16 * 3);
+  lastImageTime = millis(); // Save time of image init for next auto-cycle
+}
+
+void LED::pov() {
+  uint32_t t = millis();
+
+  switch(imageType) {
+    case PALETTE1: { // 1-bit (2 color) palette-based image
+      uint8_t  pixelNum = 0, byteNum, bitNum, pixels, idx,
+              *ptr = (uint8_t *)&imagePixels[imageLine * NUM_LEDS / 8];
+      for(byteNum = NUM_LEDS/8; byteNum--; ) { // Always padded to next byte
+        pixels = *ptr++;                       // 8 pixels of data (pixel 0 = LSB)
+        for(bitNum = 8; bitNum--; pixels >>= 1) {
+          idx = pixels & 1; // Color table index for pixel (0 or 1)
+          setPixel(pixelNum++,
+            palette[idx][0], palette[idx][1], palette[idx][2]);
+        }
+      }
+      break;
+    }
+
+    case PALETTE4: { // 4-bit (16 color) palette-based image
+      uint8_t  pixelNum, p1, p2,
+              *ptr = (uint8_t *)&imagePixels[imageLine * NUM_LEDS / 2];
+      for(pixelNum = 0; pixelNum < NUM_LEDS; ) {
+        p2  = *ptr++;  // Data for two pixels...
+        p1  = p2 >> 4; // Shift down 4 bits for first pixel
+        p2 &= 0x0F;    // Mask out low 4 bits for second pixel
+        setPixel(pixelNum++,
+          palette[p1][0], palette[p1][1], palette[p1][2]);
+        setPixel(pixelNum++,
+          palette[p2][0], palette[p2][1], palette[p2][2]);
+      }
+      break;
+    }
+
+    case PALETTE8: { // 8-bit (256 color) PROGMEM-palette-based image
+      uint16_t  o;
+      uint8_t   pixelNum,
+                *ptr = (uint8_t *)&imagePixels[imageLine * NUM_LEDS];
+      for(pixelNum = 0; pixelNum < NUM_LEDS; pixelNum++) {
+        o = *ptr++ * 3; // Offset into imagePalette
+        setPixel(pixelNum,
+          imagePalette[o],
+          imagePalette[o + 1],
+          imagePalette[o + 2]);
+      }
+      break;
+    }
+
+    case TRUECOLOR: { // 24-bit ('truecolor') image (no palette)
+      uint8_t  pixelNum, r, g, b,
+              *ptr = (uint8_t *)&imagePixels[imageLine * NUM_LEDS * 3];
+      for(pixelNum = 0; pixelNum < NUM_LEDS; pixelNum++) {
+        r = *ptr++;
+        g = *ptr++;
+        b = *ptr++;
+        setPixel(pixelNum, r, g, b);
+      }
+      break;
+    }
+  }
+
+  if(++imageLine >= imageLines) imageLine = 0; // Next scanline, wrap around
+
+  while(((t = micros()) - lastLineTime) < lineInterval) {}
+
+  FastLED.show();
+  lastLineTime = t + 100;
+}
