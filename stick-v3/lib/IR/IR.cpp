@@ -1,8 +1,6 @@
 #include <IR.h>
-#include <IRremote.h>
 
 IRrecv irrecv(RECV_PIN);
-decode_results results;
 
 IR::IR() {};
 
@@ -11,7 +9,7 @@ void IR::init() {
   irrecv.enableIRIn();
   irrecv.blink13(true);
 
-  attachInterrupt(RECV_PIN, IRinterrupt, RISING);
+  // attachInterrupt(RECV_PIN, IRinterrupt, RISING);
   if (IR_DEBUG) Serial.println("IR Ready");
 }
 

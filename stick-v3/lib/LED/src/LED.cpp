@@ -3,7 +3,6 @@
 
 #include <FastLED.h>
 
-
 CRGBArray<NUM_LEDS> leds;
 
 // GLOBAL STATE STUFF ------------------------------------------------------
@@ -39,6 +38,11 @@ LED::LED() {};
 void LED::init() {
   if (LED_DEBUG) Serial.println("Init FastLED");
   FastLED.addLeds<APA102, LED_DATA_PIN, LED_CLOCK_PIN, BGR>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
+
+  patternNumber = 0;
+
+  FastLED.setBrightness(brightness[bLevel]);
+
   if (LED_DEBUG) Serial.println("FastLED Ready");
 
   imageInit(); // Initialize pointers for default image
@@ -67,7 +71,7 @@ void LED::convergeIn() {
 
     // now, let's first 20 leds to the top 20 leds, 
     leds(NUM_LEDS/2,NUM_LEDS-1) = leds(NUM_LEDS/2 - 1 ,0);
-    FastLED.delay(33);
+    FastLED.delay(35);
   }
 }
 
@@ -220,4 +224,24 @@ void LED::pov() {
 
   FastLED.show();
   lastLineTime = t + 100;
+}
+
+void LED::nextImage(void) {
+  if(++imageNumber >= NUM_IMAGES) imageNumber = 0;
+  imageInit();
+}
+
+void LED::prevImage(void) {
+  imageNumber = imageNumber ? imageNumber - 1 : NUM_IMAGES - 1;
+  imageInit();
+}
+
+void LED::nextPattern() {
+  if(++patternNumber >= NUM_PATTERNS) patternNumber = 0;
+  Serial.println("Current Pattern #: " + patternNumber);
+}
+
+void LED::prevPattern() {
+  patternNumber = patternNumber ? patternNumber - 1 : NUM_PATTERNS - 1;
+  Serial.println("Current Pattern #: " + patternNumber);
 }
