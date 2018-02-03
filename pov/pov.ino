@@ -51,8 +51,8 @@ typedef uint16_t line_t;
 // Ideally you use hardware SPI as it's much faster, though limited to
 // specific pins.  If you really need to bitbang DotStar data & clock on
 // different pins, optionally define those here:
-#define LED_DATA_PIN  32
-#define LED_CLOCK_PIN 33
+#define LED_DATA_PIN  22
+#define LED_CLOCK_PIN 20
 
 // Empty and full thresholds (millivolts) used for battery level display:
 #define BATT_MIN_MV 3350 // Some headroom over battery cutoff near 2.9V
@@ -61,7 +61,7 @@ typedef uint16_t line_t;
 boolean autoCycle = true; // Set to true to cycle images by default
 uint32_t CYCLE_TIME = 12; // Time, in seconds, between auto-cycle images
 
-int RECV_PIN = 30;
+int RECV_PIN = 5;
 IRrecv irrecv(RECV_PIN);
 decode_results results;
 
@@ -365,13 +365,7 @@ void loop() {
 //    Serial.println("pov mode on");
     lineInterval = 1000000L / 750;
   } else {
-//    Serial.println("pattern mode on");
-    lineInterval = 18000;
-    if (patternNumber == 2) {
-      lineInterval = 110000;
-    } else if (patternNumber == 0) {
-      lineInterval = 1000000L / 350;
-    }
+    lineInterval = micros() - lastLineTime + 1;
   }
 
 // Debug timing
