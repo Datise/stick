@@ -2,16 +2,20 @@
 #define IR_h
 
 #include "Arduino.h"
+#include <IRremote.h>
 
 #define RECV_PIN 30
-#define IR_DEBUG true
+#define IR_DEBUG false
 
 class IR {
-  static void IRinterrupt ();
+  
 
   public:
     IR();
     void init();
+    void IRinterrupt();
+
+    decode_results results;
 };
 
 #endif
