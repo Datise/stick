@@ -39,7 +39,7 @@ void LED::init() {
   if (LED_DEBUG) Serial.println("Init FastLED");
   FastLED.addLeds<APA102, LED_DATA_PIN, LED_CLOCK_PIN, BGR>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
 
-  patternNumber = 1;
+  patternNumber = 0;
 
   FastLED.setBrightness(brightness[bLevel]);
 
