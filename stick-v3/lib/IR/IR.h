@@ -4,8 +4,8 @@
 #include "Arduino.h"
 #include <IRremote.h>
 
-#define RECV_PIN 30
-#define IR_DEBUG false
+#define RECV_PIN 5
+#define IR_DEBUG true
 
 class IR {
   

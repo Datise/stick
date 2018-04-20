@@ -17,6 +17,7 @@ class DotSD {
     void printDirectory(File dir, int numTabs);
     bool bmpDrawScale(const char *filename);
     void printFile(const char* fileName);
+    void getBMPFilenameByIndex(const char *directoryName, int index, char *pnBuffer);
 
     File root;
 };

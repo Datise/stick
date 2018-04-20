@@ -8,10 +8,15 @@
 // #define LED_DATA_PIN  32
 // #define LED_CLOCK_PIN 33
 
+// 72 pixel South America
+#define NUM_LEDS 72
+#define LED_DATA_PIN  22
+#define LED_CLOCK_PIN 20
+
 // 22 pixel
-#define NUM_LEDS 22
-#define LED_DATA_PIN  7
-#define LED_CLOCK_PIN 10 
+// #define NUM_LEDS 22
+// #define LED_DATA_PIN  7
+// #define LED_CLOCK_PIN 10
 
 #define NUM_PATTERNS 3
 #define LED_DEBUG false

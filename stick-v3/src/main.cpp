@@ -2,10 +2,12 @@
 #include <LED.h>
 #include <IR.h>
 #include <DotSD.h>
+#include <WIFI.h>
 
 LED led;
 IR ir;
 DotSD dotSD;
+// WIFI wifi;
 
 // 44 Key
 #define BTN_BRIGHT_UP     0xFF3AC5
@@ -37,10 +39,12 @@ DotSD dotSD;
 boolean povMode = false;
 
 void setup() {
+  delay(5000);
   Serial.println("Welcome to dotdotflow");
   ir.init();
   led.init();
-  dotSD.init();
+  // dotSD.init();
+  // wifi.init();
 }
 
 void nextPressed() {
@@ -51,7 +55,8 @@ void prevPressed() {
   (povMode) ? led.prevImage() : led.prevPattern();
 }
 
-void loop() { 
+void loop() {
+  // wifi.listenWifi();
   if (povMode) {
     led.pov();
   } else {
@@ -68,7 +73,6 @@ void loop() {
     }
   }
   
-
   ir.IRinterrupt();
 
   if(ir.results.value != BTN_NONE) {
@@ -83,10 +87,9 @@ void loop() {
         povMode = !povMode;
         break;
       case BTN_DIR1:
-        // dotSD.printDirectory(dotSD.root, 0);
+        dotSD.printDirectory(dotSD.root, 0);
         // dotSD.root.openNextFile()
 
-        
         // Serial.println("Test file:");
         // dotSD.printFile("porn_letters.bmp");
         // dotSD.bmpDrawScale("porn_letters.bmp");
@@ -97,5 +100,7 @@ void loop() {
     // Reset IR value
     ir.results.value = BTN_NONE;
   }
+
+
 }
 

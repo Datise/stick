@@ -8,7 +8,9 @@
             "name": "PlatformIO Debugger",
             "target": "c:/Users/Jo/dotdotflow/stick/stick-v3/.pioenvs/teensy36/firmware.elf",
             "gdbpath": "C:/Users/Jo/.platformio/penv/Scripts/piodebuggdb",
-            "autorun": [ "source .pioinit" ]
+            "autorun": [ "source .pioinit" ],
+            "preLaunchTask": "PlatformIO: Pre-Debug",
+            "internalConsoleOptions": "openOnSessionStart"
         }
     ]
 }

@@ -133,6 +133,7 @@ void DotSD::printDirectory(File dir, int numTabs) {
     }
     entry.close();
   }
+  Serial.println();
 }
 
 //*************Support Funcitons****************//
@@ -281,4 +282,58 @@ void DotSD::printFile(const char* fileName) {
 
   Serial.print("File size is: "); Serial.println(size);
   file.close();
+}
+
+
+bool isBMP(const char filename []) {
+    if (filename[0] == '_')
+        return false;
+
+    if (filename[0] == '~')
+        return false;
+
+    if (filename[0] == '.')
+        return false;
+
+    String filenameString = String(filename).toUpperCase();
+    if (filenameString.endsWith(".BMP") != 1)
+        return false;
+
+    return true;
+}
+
+void DotSD::getBMPFilenameByIndex(const char *directoryName, int index, char *pnBuffer) {
+
+    char* filename;
+
+    // Make sure index is in range
+    if ((index < 0) || (index >= 10))
+        return;
+
+    File directory = SD.open(directoryName);
+    if (!directory)
+        return;
+
+    File file = directory.openNextFile();
+    while (file && (index >= 0)) {
+        filename = file.name();
+
+        Serial.println(filename);
+
+        if (isBMP(file.name())) {
+            index--;
+
+            // Copy the directory name into the pathname buffer
+            strcpy(pnBuffer, directoryName);
+
+            // Append the filename to the pathname
+            strcat(pnBuffer, filename);
+        }
+
+        file.close();
+        file = directory.openNextFile();
+    }
+
+    file.close();
+    directory.close();
 }
