@@ -62,7 +62,8 @@ void loop() {
   } else {
     switch(led.patternNumber) {
       case 0:
-        led.fire(50, 80, 15);
+        // led.fire(50, 80, 15);
+        led.cylon(true, 60);
         break;
       case 1:
         led.sparkle(random(255), random(255), random(255), 0);

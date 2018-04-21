@@ -18,7 +18,6 @@
 // #define LED_DATA_PIN  7
 // #define LED_CLOCK_PIN 10
 
-#define NUM_PATTERNS 3
 #define LED_DEBUG false
 
 class LED {
@@ -33,6 +32,7 @@ class LED {
     void convergeIn();
     void fire(int Cooling, unsigned int Sparking, int SpeedDelay);
     void sparkle(byte red, byte green, byte blue, int SpeedDelay);
+    void cylon(bool trail, uint8_t wait);
 
     // State
     uint8_t patternNumber;
@@ -40,12 +40,20 @@ class LED {
     void prevImage();
     void nextPattern();
     void prevPattern();
+    // void getCurrPattern();
     
   private:
-    void imageInit();
-    void setPixelHeatColor(int Pixel, byte temperature);
+    // Util
+    void setPixel(int pixelNum, uint32_t c);
     void setPixel(int pixelNum, int r, int g, int b);
     void showStrip();
+    uint32_t Wheel(byte WheelPos);
+
+    // POV
+    void imageInit();
+
+    // Fire
+    void setPixelHeatColor(int Pixel, byte temperature);
 };
 
 #endif

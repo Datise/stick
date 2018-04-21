@@ -1,6 +1,5 @@
 #include <LED.h>
 #include <pov.h>
-
 #include <FastLED.h>
 
 CRGBArray<NUM_LEDS> leds;
@@ -18,7 +17,17 @@ line_t   imageLines,         // Number of lines in active image
          imageLine;          // Current line number in image
   
 const uint8_t PROGMEM brightness[] = { 4, 24, 48, 72,  98, 128, 192, 224, 255 };
-uint8_t bLevel = sizeof(brightness) - 1;
+uint8_t bLevel = 2; // Default brightness level
+
+const String patterns[] = {"fire", "sparkle", "cylon"};
+// enum patterns {
+//   fire, sparkle, cylon
+// };
+
+// typedef struct {
+//   uint8_t patternNumber;
+//   char* patternName;
+// } pattern;
 
 // Microseconds per line for various speed settings
 const uint16_t PROGMEM lineTable[] = { // 375 * 2^(n/3)
@@ -40,7 +49,6 @@ void LED::init() {
   FastLED.addLeds<APA102, LED_DATA_PIN, LED_CLOCK_PIN, BGR>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
 
   patternNumber = 0;
-
   FastLED.setBrightness(brightness[bLevel]);
 
   if (LED_DEBUG) Serial.println("FastLED Ready");
@@ -49,6 +57,10 @@ void LED::init() {
 }
 
 // Utility
+void LED::setPixel(int pixelNum, uint32_t c) {
+   leds[pixelNum] = c;
+}
+
 void LED::setPixel(int pixelNum, int r, int g, int b) {
   leds[pixelNum].r = r;
   leds[pixelNum].g = g;
@@ -57,6 +69,19 @@ void LED::setPixel(int pixelNum, int r, int g, int b) {
 
  void LED::showStrip() {
   FastLED.show();
+}
+
+uint32_t LED::Wheel(byte WheelPos) {
+  WheelPos = 255 - WheelPos;
+  if(WheelPos < 85) {
+    return ((((uint32_t)(255 - WheelPos * 3)) << 16) + (WheelPos * 3));
+  }
+  if(WheelPos < 170) {
+    WheelPos -= 85;
+    return ((((uint32_t)(WheelPos * 3)) << 8) + (255 - WheelPos * 3));
+  }
+  WheelPos -= 170;
+  return ((((uint32_t)(WheelPos * 3)) << 16) + (((uint32_t)(255 - WheelPos * 3)) << 8));
 }
 
 //--- Patterns ---
@@ -136,6 +161,34 @@ void LED::sparkle(byte red, byte green, byte blue, int SpeedDelay) {
   showStrip();
   delay(SpeedDelay);
   setPixel(pixel, 0, 0, 0);
+}
+
+void LED::cylon(bool trail, uint8_t wait) {
+  static uint8_t hue = 0;
+    // First slide the led in one direction
+    for(uint16_t i = 0; i < NUM_LEDS; i++) {
+      // Set the i'th led to red
+      setPixel(i, Wheel(hue++));
+      showStrip();
+      // now that we've shown the leds, reset the i'th led to black
+      if (!trail) setPixel(i, 0);\
+      // Fade all
+      for (int i = 0; i < NUM_LEDS; i++) {
+        leds[i].nscale8(250);
+      }
+      // Wait a little bit before we loop around and do it again
+      delay(wait/4);
+    }
+
+     for(uint16_t i = (NUM_LEDS)-1; i > 0; i--) {
+      setPixel(i, Wheel(hue++));
+      showStrip();
+      if (!trail) setPixel(i, 0);
+      for (int i = 0; i < NUM_LEDS; i++) {
+        leds[i].nscale8(250);
+      }
+      delay(wait/4);
+    }
 }
 
 //--- POV ---
@@ -237,11 +290,20 @@ void LED::prevImage(void) {
 }
 
 void LED::nextPattern() {
-  if(++patternNumber >= NUM_PATTERNS) patternNumber = 0;
+  // pattern.size();
+  if(++patternNumber >= sizeof(patterns)) patternNumber = 0;
   Serial.println("Current Pattern #: " + patternNumber);
 }
 
 void LED::prevPattern() {
-  patternNumber = patternNumber ? patternNumber - 1 : NUM_PATTERNS - 1;
+  patternNumber = patternNumber ? patternNumber - 1 : sizeof(patterns) - 1;
   Serial.println("Current Pattern #: " + patternNumber);
 }
+
+// void LED::getCurrPattern() {
+//   switch(patternNumber) {
+//     case fire:
+//       fire(50, 80, 15);
+//       break;
+//   }
+// }
