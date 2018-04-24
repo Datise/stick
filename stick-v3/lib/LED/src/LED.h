@@ -36,10 +36,15 @@ class LED {
 
     // State
     uint8_t patternNumber;
+    uint8_t speed;
+
+    // State change
     void nextImage();
     void prevImage();
     void nextPattern();
     void prevPattern();
+    void faster();
+    void slower();
     // void getCurrPattern();
     
   private:

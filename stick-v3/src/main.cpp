@@ -18,15 +18,18 @@ DotSD dotSD;
 #define BTN_BRIGHT_DOWN_3 0x21
 #define BTN_RESTART       0xFD807F
 #define BTN_BATTERY       0xFD20DF
-#define BTN_FASTER        0xFFE817
-#define BTN_SLOWER        0xFFC837
+#define BTN_FASTER        0xA3C8EDDB
+#define BTN_SLOWER        0x9EF4941F
 #define BTN_OFF           0x80C
 #define BTN_PREV          0xFF08F7
 #define BTN_PREV_2        0x811
 #define BTN_PREV_3        0x11
+#define BTN_PREV_4        0x45473C1B
 #define BTN_NEXT          0xFF28D7
 #define BTN_NEXT_2        0x810
 #define BTN_NEXT_3        0x10
+#define BTN_NEXT_4        0x13549BDF
+
 #define BTN_AUTOPLAY      0XFFF00F
 #define BTN_SWITCH_MODE   0XFF827D
 #define BTN_SWITCH_MODE_2 0X80B
@@ -39,7 +42,6 @@ DotSD dotSD;
 boolean povMode = false;
 
 void setup() {
-  delay(5000);
   Serial.println("Welcome to dotdotflow");
   ir.init();
   led.init();
@@ -62,14 +64,13 @@ void loop() {
   } else {
     switch(led.patternNumber) {
       case 0:
-        // led.fire(50, 80, 15);
-        led.cylon(true, 60);
+        led.fire(50, 80, led.speed);
         break;
       case 1:
-        led.sparkle(random(255), random(255), random(255), 0);
+        led.sparkle(random(255), random(255), random(255), led.speed);
         break;
       case 2:
-        led.convergeIn();
+        led.cylon(true, led.speed);
         break;
     }
   }
@@ -79,16 +80,24 @@ void loop() {
   if(ir.results.value != BTN_NONE) {
     switch(ir.results.value) {
       case BTN_NEXT:
+      case BTN_NEXT_4:
         nextPressed();
         break;
       case BTN_PREV:
+      case BTN_PREV_4:
         prevPressed();
         break;
       case BTN_SWITCH_MODE:
         povMode = !povMode;
         break;
+      case BTN_FASTER:
+        led.faster();
+        break;
+      case BTN_SLOWER:
+        led.slower();
+        break;
       case BTN_DIR1:
-        dotSD.printDirectory(dotSD.root, 0);
+        // dotSD.printDirectory(dotSD.root, 0);
         // dotSD.root.openNextFile()
 
         // Serial.println("Test file:");
