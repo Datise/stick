@@ -171,7 +171,7 @@ void LED::cylon(bool trail, uint8_t wait, bool (*IR_Interrupt)(void)) {
   for(uint16_t i = 0; i < NUM_LEDS; i++) {
     // Set the i'th led to red
     setPixel(i, Wheel(hue++));
-    if (IR_Interrupt()) break;
+    if (IR_Interrupt()) return;
     showStrip();
     // now that we've shown the leds, reset the i'th led to black
     if (!trail) setPixel(i, 0);
@@ -185,7 +185,7 @@ void LED::cylon(bool trail, uint8_t wait, bool (*IR_Interrupt)(void)) {
 
   for(uint16_t i = (NUM_LEDS)-1; i > 0; i--) {
     setPixel(i, Wheel(hue++));
-    if (IR_Interrupt()) break;
+    if (IR_Interrupt()) return;
     showStrip();
     if (!trail) setPixel(i, 0);
     for (int i = 0; i < NUM_LEDS; i++) {
@@ -219,7 +219,7 @@ void LED::doubleCoverge(bool trail, uint8_t wait, bool rev, bool (*IR_Interrupt)
         setPixel(NUM_LEDS / 2 + i - 4, 0);
       }
     }
-    if (IR_Interrupt()) break;
+    if (IR_Interrupt()) return;
     showStrip();
     delay(wait / 3);
   }
@@ -231,7 +231,7 @@ void LED::theaterChase(byte red, byte green, byte blue, uint8_t wait, bool (*IR_
       for (uint16_t i = 0; i < NUM_LEDS; i = i + 3) {
         setPixel(i + q, red, green, blue); //turn every third pixel on
       }
-      if (IR_Interrupt()) break;
+      if (IR_Interrupt()) return;
       showStrip();
       delay(wait);
       for (uint16_t i = 0; i < NUM_LEDS; i = i + 3) {
@@ -247,7 +247,7 @@ void LED::theaterChaseRainbow(uint8_t wait, bool (*IR_Interrupt)(void)) {
       for (uint16_t i=0; i < NUM_LEDS; i=i+3) {
         setPixel(i+q, Wheel( (i+j) % 255));    //turn every third pixel on
       }
-      if (IR_Interrupt()) break;
+      if (IR_Interrupt()) return;
       showStrip();
       delay(wait);
       for (uint16_t i=0; i < NUM_LEDS; i=i+3) {
@@ -265,7 +265,7 @@ void LED::flash2(uint8_t wait, bool (*IR_Interrupt)(void)) {
       setPixel(i, Wheel(j * 5));
       setPixel(i+1, 0);
     }
-    if (IR_Interrupt()) break;
+    if (IR_Interrupt()) return;
     showStrip();
     delay(wait*2);
     
@@ -273,7 +273,7 @@ void LED::flash2(uint8_t wait, bool (*IR_Interrupt)(void)) {
       setPixel(i, Wheel(j * 5 + 48));
       setPixel(i+1, 0);
     }
-    if (IR_Interrupt()) break;
+    if (IR_Interrupt()) return;
     showStrip();
     delay(wait*2);
   }
@@ -287,7 +287,7 @@ void LED::flash3(uint8_t wait, bool (*IR_Interrupt)(void)) {
         setPixel(i+1, Wheel(j * 5+128));
         setPixel(i+2, 0);
     }
-    if (IR_Interrupt()) break;
+    if (IR_Interrupt()) return;
     showStrip();
     // if (handle_IR(wait)) return;
     delay(wait);
@@ -298,7 +298,7 @@ void LED::flash3(uint8_t wait, bool (*IR_Interrupt)(void)) {
         setPixel(i+1, Wheel(j * 5+128));
         setPixel(i+2, 0);
     }
-    if (IR_Interrupt()) break;
+    if (IR_Interrupt()) return;
     
     showStrip();
     delay(wait);
@@ -309,7 +309,7 @@ void LED::flash3(uint8_t wait, bool (*IR_Interrupt)(void)) {
         setPixel(i+1, Wheel(j * 5+128));
         setPixel(i+2, 0);
     }
-    if (IR_Interrupt()) break;
+    if (IR_Interrupt()) return;
     showStrip();
     delay(wait);
   }
