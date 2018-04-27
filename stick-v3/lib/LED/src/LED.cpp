@@ -20,10 +20,10 @@ const uint8_t PROGMEM brightness[] = { 4, 24, 48, 72,  98, 128, 192, 224, 255 };
 uint8_t bLevel = 2; // Default brightness level
 
 const int DEFAULT_SPEED = 16;
-const int MAX_SPEED = 32;
+const int MAX_SPEED = 64;
 
 const int DEFAULT_PATTERN_NUM = 0;
-const String patterns[] = {"flash3", "fire", "doubleCoverge", "theaterChaseRainbow", "sparkle", "cylon", "theaterChase", "flash2", "doubleConvergeNoTrail"};
+const String patterns[] = {"flash3", "doubleCoverge", "theaterChaseRainbow", "sparkle", "cylon", "theaterChase", "doubleConvergeNoTrail", "flash2", "fire"};
 const int numPatterns = sizeof(patterns) / sizeof(String);
 
 unsigned long time_now = 0;
@@ -165,12 +165,13 @@ void LED::sparkle(byte red, byte green, byte blue, int SpeedDelay) {
   setPixel(pixel, 0, 0, 0);
 }
 
-void LED::cylon(bool trail, uint8_t wait) {
+void LED::cylon(bool trail, uint8_t wait, bool (*IR_Interrupt)(void)) {
   static uint8_t hue = 0;
   // First slide the led in one direction
   for(uint16_t i = 0; i < NUM_LEDS; i++) {
     // Set the i'th led to red
     setPixel(i, Wheel(hue++));
+    if (IR_Interrupt()) break;
     showStrip();
     // now that we've shown the leds, reset the i'th led to black
     if (!trail) setPixel(i, 0);
@@ -184,6 +185,7 @@ void LED::cylon(bool trail, uint8_t wait) {
 
   for(uint16_t i = (NUM_LEDS)-1; i > 0; i--) {
     setPixel(i, Wheel(hue++));
+    if (IR_Interrupt()) break;
     showStrip();
     if (!trail) setPixel(i, 0);
     for (int i = 0; i < NUM_LEDS; i++) {
@@ -193,7 +195,7 @@ void LED::cylon(bool trail, uint8_t wait) {
   }
 }
 
-void LED::doubleCoverge(bool trail, uint8_t wait, bool rev=false) {
+void LED::doubleCoverge(bool trail, uint8_t wait, bool rev, bool (*IR_Interrupt)(void)) {
   static uint8_t hue;
   for (uint16_t i = 0; i < NUM_LEDS / 2 + 4; i++)
   {
@@ -217,18 +219,19 @@ void LED::doubleCoverge(bool trail, uint8_t wait, bool rev=false) {
         setPixel(NUM_LEDS / 2 + i - 4, 0);
       }
     }
-
+    if (IR_Interrupt()) break;
     showStrip();
     delay(wait / 3);
   }
 }
 
-void LED::theaterChase(byte red, byte green, byte blue, uint8_t wait) {
+void LED::theaterChase(byte red, byte green, byte blue, uint8_t wait, bool (*IR_Interrupt)(void)) {
   for (int j = 0; j < 10; j++) { //do 10 cycles of chasing
     for (int q = 0; q < 3; q++) {
       for (uint16_t i = 0; i < NUM_LEDS; i = i + 3) {
         setPixel(i + q, red, green, blue); //turn every third pixel on
       }
+      if (IR_Interrupt()) break;
       showStrip();
       delay(wait);
       for (uint16_t i = 0; i < NUM_LEDS; i = i + 3) {
@@ -238,12 +241,13 @@ void LED::theaterChase(byte red, byte green, byte blue, uint8_t wait) {
   }
 }
 
-void LED::theaterChaseRainbow(uint8_t wait) {
+void LED::theaterChaseRainbow(uint8_t wait, bool (*IR_Interrupt)(void)) {
   for (int j=0; j < 256; j+=7) {     // cycle all 256 colors in the wheel
     for (int q=0; q < 3; q++) {
       for (uint16_t i=0; i < NUM_LEDS; i=i+3) {
         setPixel(i+q, Wheel( (i+j) % 255));    //turn every third pixel on
       }
+      if (IR_Interrupt()) break;
       showStrip();
       delay(wait);
       for (uint16_t i=0; i < NUM_LEDS; i=i+3) {
@@ -253,7 +257,7 @@ void LED::theaterChaseRainbow(uint8_t wait) {
   }
 }
 
-void LED::flash2(uint8_t wait) {
+void LED::flash2(uint8_t wait, bool (*IR_Interrupt)(void)) {
   uint16_t i, j;
 
   for(j=0; j<52; j++) {
@@ -261,6 +265,7 @@ void LED::flash2(uint8_t wait) {
       setPixel(i, Wheel(j * 5));
       setPixel(i+1, 0);
     }
+    if (IR_Interrupt()) break;
     showStrip();
     delay(wait*2);
     
@@ -268,12 +273,13 @@ void LED::flash2(uint8_t wait) {
       setPixel(i, Wheel(j * 5 + 48));
       setPixel(i+1, 0);
     }
+    if (IR_Interrupt()) break;
     showStrip();
     delay(wait*2);
   }
 }
 
-void LED::flash3(uint8_t wait) {
+void LED::flash3(uint8_t wait, bool (*IR_Interrupt)(void)) {
   uint16_t i, j;
   for(j=0; j<52; j++) {
     for(i=0; i< NUM_LEDS; i+=3) {
@@ -281,28 +287,31 @@ void LED::flash3(uint8_t wait) {
         setPixel(i+1, Wheel(j * 5+128));
         setPixel(i+2, 0);
     }
+    if (IR_Interrupt()) break;
     showStrip();
     // if (handle_IR(wait)) return;
-    // delay(wait);
-    sei(); delay(wait); cli();
+    delay(wait);
+    
 
     for(i=1; i< NUM_LEDS-2; i+=3) {
         setPixel(i, Wheel(j * 5 + 48));
         setPixel(i+1, Wheel(j * 5+128));
         setPixel(i+2, 0);
     }
+    if (IR_Interrupt()) break;
+    
     showStrip();
-    // delay(wait);
-    sei(); delay(wait); cli();
+    delay(wait);
+    
 
     for(i=2; i< NUM_LEDS-2; i+=3) {
         setPixel(i, Wheel(j * 5 + 96));
         setPixel(i+1, Wheel(j * 5+128));
         setPixel(i+2, 0);
     }
+    if (IR_Interrupt()) break;
     showStrip();
-    // delay(wait);
-    sei(); delay(wait); cli();
+    delay(wait);
   }
 }
 
@@ -407,14 +416,14 @@ void LED::prevImage(void) {
 void LED::nextPattern() {
   if(++patternNumber >= numPatterns) patternNumber = 0;
   Serial.print("pattern:");
-  Serial.println(patternNumber);
+  Serial.println(patterns[patternNumber]);
 }
 
 void LED::prevPattern() {
   patternNumber = patternNumber ? patternNumber - 1 : numPatterns - 1;
   Serial.print("pattern:");
  
-  Serial.println(patternNumber);
+  Serial.println(patterns[patternNumber]);
 }
 
 void LED::faster() {

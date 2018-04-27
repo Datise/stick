@@ -40,15 +40,15 @@ DotSD dotSD;
 #define BTN_NONE         -1
 
 boolean povMode = false;
+int patternNum = 0;
+
+bool changeMode();
 
 void setup() {
   Serial.println("Welcome to dotdotflow");
   ir.init();
+  ir.setup(digitalPinToInterrupt(5), []{changeMode();}, FALLING);
   led.init();
-  // dotSD.init();
-  // wifi.init();
-
-  // attachInterrupt(5,
 }
 
 void nextPressed() {
@@ -59,45 +59,47 @@ void prevPressed() {
   (povMode) ? led.prevImage() : led.prevPattern();
 }
 
-void loop() {
-  // wifi.listenWifi();
+void showMode() {
   if (povMode) {
     led.pov();
   } else {
     switch(led.patternNumber) {
       case 0:
-        led.flash3(led.speed);
+        led.flash3(led.speed, changeMode);
         break;
       case 1:
-        led.doubleCoverge(false, led.speed, true);
+        led.doubleCoverge(false, led.speed, true, changeMode);
         break;
       case 2:
-        led.theaterChaseRainbow(led.speed);
+        led.theaterChaseRainbow(led.speed, changeMode);
         break;
       case 3:
         led.sparkle(random(255), random(255), random(255), led.speed);
         break;
       case 4:
-        led.cylon(true, led.speed);
+        led.cylon(true, led.speed, changeMode);
         break;
       case 5:
-        led.theaterChase(random(255), random(255), random(255), led.speed);
+        led.theaterChase(random(255), random(255), random(255), led.speed, changeMode);
         break;
       case 6:
-        led.flash2(led.speed);
+        led.doubleCoverge(false, led.speed, false, changeMode);
         break;
       case 7:
-        led.fire(50, 80, led.speed);
+        led.flash2(led.speed, changeMode);
         break;
       case 8:
-        led.doubleCoverge(false, led.speed, false);
+        led.fire(50, 80, led.speed);
         break;
     }
   }
-  
-  ir.IRinterrupt();
+}
 
+bool changeMode() {
+  bool modeChanged = false;
+  ir.IRinterrupt();
   if(ir.results.value != BTN_NONE) {
+    modeChanged = true;
     switch(ir.results.value) {
       case BTN_NEXT:
       case BTN_NEXT_4:
@@ -130,6 +132,16 @@ void loop() {
     // Reset IR value
     ir.results.value = BTN_NONE;
   }
+  return modeChanged;
+}
+
+void loop() {
+  // wifi.listenWifi();
+  
+  
+  // ir.IRinterrupt();
+  showMode();
+  
 
 
 }
