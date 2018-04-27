@@ -33,7 +33,12 @@ class LED {
     void fire(int Cooling, unsigned int Sparking, int SpeedDelay);
     void sparkle(byte red, byte green, byte blue, int SpeedDelay);
     void cylon(bool trail, uint8_t wait);
-
+    void doubleCoverge(bool trail, uint8_t wait, bool rev);
+    void theaterChase(byte red, byte green, byte blue, uint8_t wait);
+    void theaterChaseRainbow(uint8_t wait);
+    void flash2(uint8_t wait);
+    void flash3(uint8_t wait);
+    
     // State
     uint8_t patternNumber;
     uint8_t speed;
@@ -45,7 +50,6 @@ class LED {
     void prevPattern();
     void faster();
     void slower();
-    // void getCurrPattern();
     
   private:
     // Util
@@ -53,6 +57,7 @@ class LED {
     void setPixel(int pixelNum, int r, int g, int b);
     void showStrip();
     uint32_t Wheel(byte WheelPos);
+    void timeLoop (long int startMillis, long int interval);
 
     // POV
     void imageInit();

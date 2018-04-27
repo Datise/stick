@@ -47,6 +47,8 @@ void setup() {
   led.init();
   // dotSD.init();
   // wifi.init();
+
+  // attachInterrupt(5,
 }
 
 void nextPressed() {
@@ -64,13 +66,31 @@ void loop() {
   } else {
     switch(led.patternNumber) {
       case 0:
-        led.fire(50, 80, led.speed);
+        led.flash3(led.speed);
         break;
       case 1:
-        led.sparkle(random(255), random(255), random(255), led.speed);
+        led.doubleCoverge(false, led.speed, true);
         break;
       case 2:
+        led.theaterChaseRainbow(led.speed);
+        break;
+      case 3:
+        led.sparkle(random(255), random(255), random(255), led.speed);
+        break;
+      case 4:
         led.cylon(true, led.speed);
+        break;
+      case 5:
+        led.theaterChase(random(255), random(255), random(255), led.speed);
+        break;
+      case 6:
+        led.flash2(led.speed);
+        break;
+      case 7:
+        led.fire(50, 80, led.speed);
+        break;
+      case 8:
+        led.doubleCoverge(false, led.speed, false);
         break;
     }
   }
