@@ -36,6 +36,7 @@ DotSD dotSD;
 #define BTN_SWITCH_MODE   0XFF827D
 #define BTN_SWITCH_MODE_2 0X80B
 #define BTN_SWITCH_MODE_3 0XB
+#define BTN_SWITCH_MODE_4 0X3195A31F
 
 #define BTN_DIR1 0XFF30CF
 
@@ -112,6 +113,7 @@ bool changeMode() {
         prevPressed();
         break;
       case BTN_SWITCH_MODE:
+      case BTN_SWITCH_MODE_4:
         povMode = !povMode;
         break;
       case BTN_BRIGHT_UP:
