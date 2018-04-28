@@ -2,9 +2,13 @@
 
 const int chipSelect = BUILTIN_SDCARD;
 
-#define BUFFPIXEL     512
+#define BUFFPIXEL     10800
 #define BMP_SIGNATURE 0x4D42
 int paintSpeed = 15;
+
+File bmpFile;
+
+unsigned int image_buffer[10800];
 
 DotSD::DotSD() {};
 
@@ -26,7 +30,8 @@ void DotSD::init() {
     return;
   }
 
-  root = SD.open("/meow/");
+  root = SD.open("/meow");
+  bmpFile = root.openNextFile();
 
   if (DotSD_DEBUG) Serial.println("SD Ready");
 }
@@ -156,9 +161,8 @@ uint32_t read32(File& f) {
   return result;
 }
 
-bool DotSD::bmpDrawScale(const char *filename)
-{
-  File bmpFile;
+DotSD::BmpImage DotSD::readBmp(const char *filename) {
+  BmpImage fileData;
   int bmpWidth, bmpHeight;             // W+H in pixels
   uint8_t bmpDepth;                    // Bit depth (currently must report 24)
   uint32_t bmpImageoffset;             // Start of image data in file
@@ -171,12 +175,36 @@ bool DotSD::bmpDrawScale(const char *filename)
   int w, h, row, col;
   int r, g, b;
   uint32_t pos = 0, startTime = millis();
-  uint8_t povidx = 0;
+  int povidx = 0;
   boolean first = true;
+  int imageidx = 0;
+
+  Serial.println("TESTING: ");
+  Serial.println(bmpFile.name());
 
   // Open requested file on SD card
-  bmpFile = SD.open(filename);
-  Serial.println(filename);
+  // bmpFile = SD.open(filename);
+  // if ((bmpFile = SD.open(filename)) == NULL) {
+  //   Serial.println("File not found");
+  // }
+
+  // Serial.println();
+  // Serial.print(F("Loading image '"));
+  // Serial.print(filename);
+  // Serial.println('\'');
+
+  // bmpFile = root.openNextFile();
+
+  // if (SD.exists(filename)) {
+  //   Serial.println("File does not exist");
+  // }
+
+  // // Open requested file on SD card
+  // if ((bmpFile = SD.open(filename)) == NULL) {
+  //   Serial.println(F("File not found"));
+  //   return false;
+  // }
+  Serial.println("TESTING2: ");
   // Parse BMP header
   uint16_t signature = read16(bmpFile);
   Serial.print("File signature: ");
@@ -185,91 +213,90 @@ bool DotSD::bmpDrawScale(const char *filename)
   if (signature == BMP_SIGNATURE) { // BMP signature
     Serial.print("File size: ");
     Serial.println(read32(bmpFile));
-    // (void)read32(bmpFile);            // Read & ignore creator bytes
-    // bmpImageoffset = read32(bmpFile); // Start of image data
-  //   Serial.print("Image Offset: ");
-  //   Serial.println(bmpImageoffset, DEC);
-  //   // Read DIB header
-  //   Serial.print("Header size: ");
-  //   Serial.println(read32(bmpFile));
-  //   bmpWidth = read32(bmpFile);
-  //   bmpHeight = read32(bmpFile);
-  //   if (read16(bmpFile) == 1)
-  //   {                             // # planes — must be ‘1’
-  //     bmpDepth = read16(bmpFile); // bits per pixel
-  //     Serial.print("Bit Depth: ");
-  //     Serial.println(bmpDepth);
-  //     if ((bmpDepth == 24) && (read32(bmpFile) == 0))
-  //     { // 0 = uncompressed
+    (void)read32(bmpFile);            // Read & ignore creator bytes
+    bmpImageoffset = read32(bmpFile); // Start of image data
+    Serial.print("Image Offset: ");
+    Serial.println(bmpImageoffset, DEC);
+    // Read DIB header
+    Serial.print("Header size: ");
+    Serial.println(read32(bmpFile));
+    bmpWidth = read32(bmpFile);
+    bmpHeight = read32(bmpFile);
+    if (read16(bmpFile) == 1) {                             // # planes — must be ‘1’
+      bmpDepth = read16(bmpFile); // bits per pixel
+      Serial.print("Bit Depth: ");
+      Serial.println(bmpDepth);
+      if ((bmpDepth == 24) && (read32(bmpFile) == 0)) { // 0 = uncompressed
 
-  //       goodBmp = true; // Supported BMP format — proceed!
-  //       Serial.print("Image size: ");
-  //       Serial.print(bmpWidth);
-  //       Serial.print('x');
-  //       Serial.println(bmpHeight);
+        goodBmp = true; // Supported BMP format — proceed!
+        Serial.print("Image size: ");
+        Serial.print(bmpWidth);
+        Serial.print('x');
+        Serial.println(bmpHeight);
 
-  //       // BMP rows are padded (if needed) to 4-byte boundary
-  //       rowSize = (bmpWidth * 3 + 3) & ~3;
+        // BMP rows are padded (if needed) to 4-byte boundary
+        rowSize = (bmpWidth * 3 + 3) & ~3;
 
-  //       // If bmpHeight is negative, image is in top-down order.
-  //       // This is not canon but has been observed in the wild.
-  //       if (bmpHeight < 0)
-  //       {
-  //         bmpHeight = -bmpHeight;
-  //         flip = false;
-  //       }
+        Serial.print("Row size: ");
+        Serial.println(rowSize);
 
-  //       w = bmpWidth;
-  //       h = bmpHeight;
+        // If bmpHeight is negative, image is in top-down order.
+        // This is not canon but has been observed in the wild.
+        if (bmpHeight < 0) {
+          bmpHeight = -bmpHeight;
+          flip = false;
+          if (flip) Serial.println("flip false");
+        }
 
-  //       for (row = 0; row < h; row++)
-  //       {
-  //         if (flip) // Bitmap is stored bottom-to-top order (normal BMP)
-  //           pos = bmpImageoffset + (bmpHeight - 1 - row) * rowSize;
-  //         else // Bitmap is stored top-to-bottom
-  //           pos = bmpImageoffset + row * rowSize;
-  //         if (bmpFile.position() != pos)
-  //         { // Need seek?
-  //           bmpFile.seek(pos);
-  //           buffidx = sizeof(sdbuffer); // Force buffer reload
-  //         }
+        w = bmpWidth;
+        h = bmpHeight;
 
-  //         for (col = 0; col < w; col++)
-  //         { // For each column…
-  //           // read more pixel data
-  //           if (buffidx >= sizeof(sdbuffer))
-  //           {
-  //             povidx = 0;
-  //             bmpFile.read(sdbuffer, sizeof(sdbuffer));
-  //             buffidx = 0; // Set index to beginning
-  //           }
-  //           // set pixel
-  //           r = sdbuffer[buffidx++];
-  //           g = sdbuffer[buffidx++];
-  //           b = sdbuffer[buffidx++];
-  //           Serial.print(r);
-  //           Serial.print(" ");
-  //           Serial.print(g);
-  //           Serial.print(" ");
-  //           Serial.println(b);
-  //           //we need to output BRG 24bit colour//
-  //           povbuffer[povidx++] = (b << 16) + (g << 8) + r;
-  //         }
+        for (row = 0; row < h; row++) {
+          if (flip) // Bitmap is stored bottom-to-top order (normal BMP)
+            pos = bmpImageoffset + (bmpHeight - 1 - row) * rowSize;
+          else // Bitmap is stored top-to-bottom
+            pos = bmpImageoffset + row * rowSize;
+          if (bmpFile.position() != pos)
+          { // Need seek?
+            bmpFile.seek(pos);
+            buffidx = sizeof(sdbuffer); // Force buffer reload
+          }
 
-  //         // for (int i = 0; i < NUM_LEDS; i++)
-  //         // {
-  //         //   leds[i] = povbuffer[i];
-  //         // }
-  //         // FastLED.show();
-  //         delay(paintSpeed); // change the delay time depending effect required
-  //       }                    // end scanline
+          for (col = 0; col < w; col++) { // For each column…
+            // read more pixel data
+            if (buffidx >= sizeof(sdbuffer)) {
+              povidx = 0;
+              bmpFile.read(sdbuffer, sizeof(sdbuffer));
+              buffidx = 0; // Set index to beginning
+            }
+            // set pixel
+            r = sdbuffer[buffidx++];
+            g = sdbuffer[buffidx++];
+            b = sdbuffer[buffidx++];
+            // Serial.print(r);
+            // Serial.print(" ");
+            // Serial.print(g);
+            // Serial.print(" ");
+            // Serial.println(b);
+            //we need to output BRG 24bit colour//
+            // povbuffer[povidx++] = (b << 16) + (g << 8) + r;
+            int rgb = ((long)b << 16L) | ((long)g << 8L) | (long)r;
+            image_buffer[imageidx++] = rgb;
 
-  //     } // end goodBmp
-  //   }
+            // Serial.println(rgb);
+            // Serial.println();
+          }
+        }                    // end scanline
+      }
+      } // end goodBmp
+    
   } //end of IF BMP
   // Serial.println();
 
   bmpFile.close();
+  fileData = {image_buffer, bmpWidth, bmpHeight};
+  return fileData;
+  // return image_buffer;
 }
 
 void DotSD::printFile(const char* fileName) {

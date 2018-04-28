@@ -177,7 +177,7 @@ void LED::cylon(bool trail, uint8_t wait, bool (*IR_Interrupt)(void)) {
     if (!trail) setPixel(i, 0);
     // Fade all
     for (int i = 0; i < NUM_LEDS; i++) {
-      leds[i].nscale8(250);
+      fadeall();
     }
     // Wait a little bit before we loop around and do it again
     delay(wait/4);
@@ -189,7 +189,7 @@ void LED::cylon(bool trail, uint8_t wait, bool (*IR_Interrupt)(void)) {
     showStrip();
     if (!trail) setPixel(i, 0);
     for (int i = 0; i < NUM_LEDS; i++) {
-      leds[i].nscale8(250);
+      fadeall();
     }
     delay(wait/4);
   }
@@ -446,3 +446,28 @@ void LED::slower() {
   Serial.println(speed);
 }
 
+void LED::fadeall() {
+  for(int i = 0; i < NUM_LEDS; i++) {  leds[i].nscale8(250); }
+}
+
+void LED::PoiSonic(unsigned long time, const unsigned int array[], unsigned int width){
+  Serial.println("PoiSonic");
+
+  unsigned long currentTime = millis();
+  while (millis() < currentTime + (time)) {
+
+    int f = width;
+    int z; //a counter
+    int j = NUM_LEDS;
+
+    for (int x = 0; x < f; x++) {
+      for (z = NUM_LEDS; z > 0; z--) {
+        leds[z - 1] = array[x + ((j - z) * f)];
+        // Serial.println(array[x + ((j - z) * f)], HEX);
+      }
+      FastLED.show();
+      delayMicroseconds(400); //may need to increase / decrease depending on spin rate
+    }
+    delayMicroseconds(1000); //may need to increase / decrease depending on spin rate
+  }
+}

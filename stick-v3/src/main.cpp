@@ -38,12 +38,17 @@ DotSD dotSD;
 #define BTN_SWITCH_MODE_3 0XB
 #define BTN_SWITCH_MODE_4 0X3195A31F
 
-#define BTN_DIR1 0XFF30CF
+#define BTN_DIR1          0XFF30CF
+#define BTN_DIR1_2        0x9716BE3F
 
 #define BTN_NONE         -1
 
 boolean povMode = false;
+boolean isOpen = false;
+
 int patternNum = 0;
+
+DotSD::BmpImage bmpImage;
 
 bool changeMode();
 
@@ -52,6 +57,7 @@ void setup() {
   ir.init();
   ir.setup(digitalPinToInterrupt(5), []{changeMode();}, FALLING);
   led.init();
+  dotSD.init();
 }
 
 void nextPressed() {
@@ -64,7 +70,8 @@ void prevPressed() {
 
 void showMode() {
   if (povMode) {
-    led.pov();
+    // led.pov();
+    led.PoiSonic(2000, bmpImage.image_array, bmpImage.w);
   } else {
     switch(led.patternNumber) {
       case 0:
@@ -130,14 +137,21 @@ bool changeMode() {
       case BTN_SLOWER:
         led.slower();
         break;
-      case BTN_DIR1:
+      // case BTN_DIR1:
+      case BTN_DIR1_2:
         // dotSD.printDirectory(dotSD.root, 0);
         // dotSD.root.openNextFile()
 
         // Serial.println("Test file:");
         // dotSD.printFile("porn_letters.bmp");
-        // dotSD.bmpDrawScale("porn_letters.bmp");
-
+        if (!isOpen) {
+          Serial.println("POV1");
+          bmpImage = dotSD.readBmp("/needle.bmp");
+          Serial.println("POV2");
+          povMode = true;
+          isOpen = true;
+        }
+        // led.PoiSonic(200, povbuffer);
         // bmpFile.close();
         break;
     }
@@ -149,12 +163,6 @@ bool changeMode() {
 
 void loop() {
   // wifi.listenWifi();
-  
-  
-  // ir.IRinterrupt();
   showMode();
-  
-
-
 }
 

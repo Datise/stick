@@ -27,6 +27,7 @@ class LED {
 
     // POV
     void pov();
+    void PoiSonic(unsigned long time, const unsigned int array[], unsigned int width);
     
     // Patterns
     void convergeIn();
@@ -52,6 +53,7 @@ class LED {
     void decreaseBrightness();
     void faster();
     void slower();
+    void fadeall();
     
   private:
     // Util

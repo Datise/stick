@@ -12,10 +12,16 @@ class DotSD {
     DotSD();
     void init();
 
+    struct BmpImage {
+      unsigned int* image_array;
+      int w;
+      int h;
+    };
+
     void cardInfo();
     void openDirectory(char* dir);
     void printDirectory(File dir, int numTabs);
-    bool bmpDrawScale(const char *filename);
+    BmpImage readBmp(const char *filename);
     void printFile(const char* fileName);
     void getBMPFilenameByIndex(const char *directoryName, int index, char *pnBuffer);
 
