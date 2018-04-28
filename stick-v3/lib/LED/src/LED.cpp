@@ -19,12 +19,14 @@ line_t   imageLines,         // Number of lines in active image
 const uint8_t PROGMEM brightness[] = { 4, 24, 48, 72,  98, 128, 192, 224, 255 };
 uint8_t bLevel = 2; // Default brightness level
 
-const int DEFAULT_SPEED = 0;
-const int MAX_SPEED = 32;
+const int DEFAULT_SPEED = 16;
+const int MAX_SPEED = 64;
 
 const int DEFAULT_PATTERN_NUM = 0;
-const String patterns[] = {"fire", "sparkle", "cylon"};
+const String patterns[] = {"flash3", "doubleCoverge", "theaterChaseRainbow", "sparkle", "cylon", "theaterChase", "doubleConvergeNoTrail", "flash2", "fire"};
 const int numPatterns = sizeof(patterns) / sizeof(String);
+
+unsigned long time_now = 0;
 
 // Microseconds per line for various speed settings
 const uint16_t PROGMEM lineTable[] = { // 375 * 2^(n/3)
@@ -155,19 +157,21 @@ void LED::fire(int Cooling, unsigned int Sparking, int SpeedDelay) {
 }
 
 void LED::sparkle(byte red, byte green, byte blue, int SpeedDelay) {
+  time_now = millis();
   int pixel = random(NUM_LEDS);
   setPixel(pixel, red, green, blue);
   showStrip();
-  delay(SpeedDelay);
+  while(millis() < time_now + SpeedDelay);
   setPixel(pixel, 0, 0, 0);
 }
 
-void LED::cylon(bool trail, uint8_t wait) {
+void LED::cylon(bool trail, uint8_t wait, bool (*IR_Interrupt)(void)) {
   static uint8_t hue = 0;
   // First slide the led in one direction
   for(uint16_t i = 0; i < NUM_LEDS; i++) {
     // Set the i'th led to red
     setPixel(i, Wheel(hue++));
+    if (IR_Interrupt()) return;
     showStrip();
     // now that we've shown the leds, reset the i'th led to black
     if (!trail) setPixel(i, 0);
@@ -181,12 +185,133 @@ void LED::cylon(bool trail, uint8_t wait) {
 
   for(uint16_t i = (NUM_LEDS)-1; i > 0; i--) {
     setPixel(i, Wheel(hue++));
+    if (IR_Interrupt()) return;
     showStrip();
     if (!trail) setPixel(i, 0);
     for (int i = 0; i < NUM_LEDS; i++) {
       leds[i].nscale8(250);
     }
     delay(wait/4);
+  }
+}
+
+void LED::doubleCoverge(bool trail, uint8_t wait, bool rev, bool (*IR_Interrupt)(void)) {
+  static uint8_t hue;
+  for (uint16_t i = 0; i < NUM_LEDS / 2 + 4; i++)
+  {
+    if (i < NUM_LEDS / 2) {
+      if (!rev) {
+        setPixel(i, Wheel(hue++));
+        setPixel(NUM_LEDS - 1 - i, Wheel(hue++));
+      }
+      else {
+        setPixel(NUM_LEDS / 2 - 1 - i, Wheel(hue++));
+        setPixel(NUM_LEDS / 2 + i, Wheel(hue++));
+      }
+    }
+    if (!trail && i > 3) {
+      if (!rev) {
+        setPixel(i - 4, 0);
+        setPixel(NUM_LEDS - 1 - i + 4, 0);
+      }
+      else {
+        setPixel(NUM_LEDS / 2 - 1 - i + 4, 0);
+        setPixel(NUM_LEDS / 2 + i - 4, 0);
+      }
+    }
+    if (IR_Interrupt()) return;
+    showStrip();
+    delay(wait / 3);
+  }
+}
+
+void LED::theaterChase(byte red, byte green, byte blue, uint8_t wait, bool (*IR_Interrupt)(void)) {
+  for (int j = 0; j < 10; j++) { //do 10 cycles of chasing
+    for (int q = 0; q < 3; q++) {
+      for (uint16_t i = 0; i < NUM_LEDS; i = i + 3) {
+        setPixel(i + q, red, green, blue); //turn every third pixel on
+      }
+      if (IR_Interrupt()) return;
+      showStrip();
+      delay(wait);
+      for (uint16_t i = 0; i < NUM_LEDS; i = i + 3) {
+        setPixel(i + q, 0, 0, 0); //turn every third pixel off
+      }
+    }
+  }
+}
+
+void LED::theaterChaseRainbow(uint8_t wait, bool (*IR_Interrupt)(void)) {
+  for (int j=0; j < 256; j+=7) {     // cycle all 256 colors in the wheel
+    for (int q=0; q < 3; q++) {
+      for (uint16_t i=0; i < NUM_LEDS; i=i+3) {
+        setPixel(i+q, Wheel( (i+j) % 255));    //turn every third pixel on
+      }
+      if (IR_Interrupt()) return;
+      showStrip();
+      delay(wait);
+      for (uint16_t i=0; i < NUM_LEDS; i=i+3) {
+        setPixel(i+q, 0);        //turn every third pixel off
+      }
+    }
+  }
+}
+
+void LED::flash2(uint8_t wait, bool (*IR_Interrupt)(void)) {
+  uint16_t i, j;
+
+  for(j=0; j<52; j++) {
+    for(i=0; i< NUM_LEDS-1; i+=2) {
+      setPixel(i, Wheel(j * 5));
+      setPixel(i+1, 0);
+    }
+    if (IR_Interrupt()) return;
+    showStrip();
+    delay(wait*2);
+    
+    for(i=1; i< NUM_LEDS-1; i+=2) {
+      setPixel(i, Wheel(j * 5 + 48));
+      setPixel(i+1, 0);
+    }
+    if (IR_Interrupt()) return;
+    showStrip();
+    delay(wait*2);
+  }
+}
+
+void LED::flash3(uint8_t wait, bool (*IR_Interrupt)(void)) {
+  uint16_t i, j;
+  for(j=0; j<52; j++) {
+    for(i=0; i< NUM_LEDS; i+=3) {
+        setPixel(i, Wheel(j * 5));
+        setPixel(i+1, Wheel(j * 5+128));
+        setPixel(i+2, 0);
+    }
+    if (IR_Interrupt()) return;
+    showStrip();
+    // if (handle_IR(wait)) return;
+    delay(wait);
+    
+
+    for(i=1; i< NUM_LEDS-2; i+=3) {
+        setPixel(i, Wheel(j * 5 + 48));
+        setPixel(i+1, Wheel(j * 5+128));
+        setPixel(i+2, 0);
+    }
+    if (IR_Interrupt()) return;
+    
+    showStrip();
+    delay(wait);
+    
+
+    for(i=2; i< NUM_LEDS-2; i+=3) {
+        setPixel(i, Wheel(j * 5 + 96));
+        setPixel(i+1, Wheel(j * 5+128));
+        setPixel(i+2, 0);
+    }
+    if (IR_Interrupt()) return;
+    showStrip();
+    delay(wait);
   }
 }
 
@@ -290,13 +415,15 @@ void LED::prevImage(void) {
 
 void LED::nextPattern() {
   if(++patternNumber >= numPatterns) patternNumber = 0;
-  Serial.println("Current Pattern #: " + patternNumber);
-  Serial.println(numPatterns);
+  Serial.print("pattern:");
+  Serial.println(patterns[patternNumber]);
 }
 
 void LED::prevPattern() {
   patternNumber = patternNumber ? patternNumber - 1 : numPatterns - 1;
-  Serial.println("Current Pattern #: " + patternNumber);
+  Serial.print("pattern:");
+ 
+  Serial.println(patterns[patternNumber]);
 }
 
 void LED::increaseBrightness() {
@@ -308,14 +435,14 @@ void LED::decreaseBrightness() {
 }
 
 void LED::faster() {
-  speed = (speed - 1 < 0) ? MAX_SPEED : speed - 1;
-  Serial.print("Faster, Current Speed:");
+  speed = (speed - 1 < 0) ? 0 : speed - 1;
+  Serial.print("speed:");
   Serial.println(speed);
 }
 
 void LED::slower() {
-  if (++speed > MAX_SPEED) speed = 0;
-  Serial.print("Slower, Current Speed:");
+  if (++speed > MAX_SPEED) speed = MAX_SPEED;
+  Serial.print("speed:");
   Serial.println(speed);
 }
 

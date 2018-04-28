@@ -14,6 +14,7 @@ class IR {
     IR();
     void init();
     void IRinterrupt();
+    void setup(uint8_t irq_pin, void (*ISR_callback)(void), int value);
 
     decode_results results;
 };

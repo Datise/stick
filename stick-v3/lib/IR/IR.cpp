@@ -8,9 +8,11 @@ void IR::init() {
   if (IR_DEBUG) Serial.println("Init IR");
   irrecv.enableIRIn();
   irrecv.blink13(true);
-
-  // attachInterrupt(RECV_PIN, IRinterrupt, RISING);
   if (IR_DEBUG) Serial.println("IR Ready");
+}
+
+void IR::setup(uint8_t irq_pin, void (*ISR_callback)(void), int value) {
+  attachInterrupt(digitalPinToInterrupt(irq_pin), ISR_callback, value);
 }
 
 void IR::IRinterrupt() {
