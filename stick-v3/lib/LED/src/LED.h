@@ -43,6 +43,8 @@ class LED {
     void prevImage();
     void nextPattern();
     void prevPattern();
+    void increaseBrightness();
+    void decreaseBrightness();
     void faster();
     void slower();
     // void getCurrPattern();

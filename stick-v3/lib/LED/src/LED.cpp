@@ -299,6 +299,14 @@ void LED::prevPattern() {
   Serial.println("Current Pattern #: " + patternNumber);
 }
 
+void LED::increaseBrightness() {
+  if(bLevel < (sizeof(brightness) - 1)) FastLED.setBrightness(brightness[++bLevel]);
+}
+
+void LED::decreaseBrightness() {
+  if(bLevel) FastLED.setBrightness(brightness[--bLevel]);
+}
+
 void LED::faster() {
   speed = (speed - 1 < 0) ? MAX_SPEED : speed - 1;
   Serial.print("Faster, Current Speed:");

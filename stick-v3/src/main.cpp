@@ -13,9 +13,11 @@ DotSD dotSD;
 #define BTN_BRIGHT_UP     0xFF3AC5
 #define BTN_BRIGHT_UP_2   0x820
 #define BTN_BRIGHT_UP_3   0x20
+#define BTN_BRIGHT_UP_4   0xB3D4B87F
 #define BTN_BRIGHT_DOWN   0xFFBA45
 #define BTN_BRIGHT_DOWN_2 0x821
 #define BTN_BRIGHT_DOWN_3 0x21
+#define BTN_BRIGHT_DOWN_4 0x44490A7B
 #define BTN_RESTART       0xFD807F
 #define BTN_BATTERY       0xFD20DF
 #define BTN_FASTER        0xA3C8EDDB
@@ -89,6 +91,14 @@ void loop() {
         break;
       case BTN_SWITCH_MODE:
         povMode = !povMode;
+        break;
+      case BTN_BRIGHT_UP:
+      case BTN_BRIGHT_UP_4:
+        led.increaseBrightness();
+        break;
+      case BTN_BRIGHT_DOWN:
+      case BTN_BRIGHT_DOWN_4:
+        led.decreaseBrightness();
         break;
       case BTN_FASTER:
         led.faster();
