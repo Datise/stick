@@ -31,6 +31,7 @@ DotSD dotSD;
 #define BTN_NEXT_2        0x810
 #define BTN_NEXT_3        0x10
 #define BTN_NEXT_4        0x13549BDF
+#define BTN_AUTO          0x35A9425F
 
 #define BTN_AUTOPLAY      0XFFF00F
 #define BTN_SWITCH_MODE   0XFF827D
@@ -42,8 +43,12 @@ DotSD dotSD;
 
 #define BTN_NONE         -1
 
+#define AUTO_CYCLE_TIME 7000
+
 boolean povMode = false;
 int patternNum = 0;
+bool autoCycleOn = true;
+
 
 bool changeMode();
 
@@ -63,6 +68,10 @@ void prevPressed() {
 }
 
 void showMode() {
+   if (autoCycleOn) {
+    led.autoCycle(AUTO_CYCLE_TIME);
+  }
+
   if (povMode) {
     led.pov();
   } else {
@@ -139,6 +148,10 @@ bool changeMode() {
         // dotSD.bmpDrawScale("porn_letters.bmp");
 
         // bmpFile.close();
+        break;
+      case BTN_AUTO:
+        autoCycleOn = !autoCycleOn;
+        // Serial.println("Toggle auto cycle");
         break;
     }
     // Reset IR value

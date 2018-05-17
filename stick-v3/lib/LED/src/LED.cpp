@@ -446,3 +446,13 @@ void LED::slower() {
   Serial.println(speed);
 }
 
+unsigned long previousMillis = 0;  
+void LED::autoCycle(long interval) {
+  unsigned long currentMillis = millis();
+
+  if (currentMillis - previousMillis >= interval) {
+    previousMillis = currentMillis;
+    nextPattern();
+  }
+}
+

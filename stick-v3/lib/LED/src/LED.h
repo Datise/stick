@@ -52,6 +52,7 @@ class LED {
     void decreaseBrightness();
     void faster();
     void slower();
+    void autoCycle(long interval);
     
   private:
     // Util
