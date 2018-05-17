@@ -20,8 +20,10 @@ DotSD dotSD;
 #define BTN_BRIGHT_DOWN_4 0x44490A7B
 #define BTN_RESTART       0xFD807F
 #define BTN_BATTERY       0xFD20DF
-#define BTN_FASTER        0xA3C8EDDB
-#define BTN_SLOWER        0x9EF4941F
+#define BTN_FASTER        0xFFE817
+#define BTN_FASTER_2      0x5BE75E7F
+#define BTN_SLOWER        0xFFC837
+#define BTN_SLOWER_2      0x8E5D3EBB
 #define BTN_OFF           0x80C
 #define BTN_PREV          0xFF08F7
 #define BTN_PREV_2        0x811
@@ -32,6 +34,13 @@ DotSD dotSD;
 #define BTN_NEXT_3        0x10
 #define BTN_NEXT_4        0x13549BDF
 #define BTN_AUTO          0x35A9425F
+#define BTN_AUTO_2        0xFFF00F
+#define BTN_BLUE_UP       0xFF6897
+#define BTN_BLUE_UP_2     0xA3C8EDDB
+#define BTN_BLUE_UP_3     0xC101E57B
+#define BTN_BLUE_DOWN     0xFF48B7
+#define BTN_BLUE_DOWN_2   0x9EF4941F
+#define BTN_BLUE_DOWN_3   0xF377C5B7
 
 #define BTN_AUTOPLAY      0XFFF00F
 #define BTN_SWITCH_MODE   0XFF827D
@@ -43,7 +52,7 @@ DotSD dotSD;
 
 #define BTN_NONE         -1
 
-#define AUTO_CYCLE_TIME 7000
+int AUTO_CYCLE_TIME = 7000;
 
 boolean povMode = false;
 int patternNum = 0;
@@ -134,9 +143,11 @@ bool changeMode() {
         led.decreaseBrightness();
         break;
       case BTN_FASTER:
+      case BTN_FASTER_2:
         led.faster();
         break;
       case BTN_SLOWER:
+      case BTN_SLOWER_2:
         led.slower();
         break;
       case BTN_DIR1:
@@ -150,8 +161,37 @@ bool changeMode() {
         // bmpFile.close();
         break;
       case BTN_AUTO:
+      case BTN_AUTO_2:
         autoCycleOn = !autoCycleOn;
+
+        autoCycleOn ? Serial.println("Auto Cycle On") : Serial.println("Auto Cycle Off");
         // Serial.println("Toggle auto cycle");
+        break;
+      case BTN_BLUE_UP:
+      case BTN_BLUE_UP_2:
+      case BTN_BLUE_UP_3:
+        if (AUTO_CYCLE_TIME >= 30000) {
+          AUTO_CYCLE_TIME = 30000;
+          Serial.print("Auto Cycle time: ");
+          Serial.println(AUTO_CYCLE_TIME);
+          break;
+        }
+        AUTO_CYCLE_TIME += 1000;
+        Serial.print("Auto Cycle time: ");
+        Serial.println(AUTO_CYCLE_TIME);
+        break;
+      case BTN_BLUE_DOWN:
+      case BTN_BLUE_DOWN_2:
+      case BTN_BLUE_DOWN_3:
+        if (AUTO_CYCLE_TIME <= 0) {
+          AUTO_CYCLE_TIME = 0;
+          Serial.print("Auto Cycle time: ");
+          Serial.println(AUTO_CYCLE_TIME);
+          break;
+        }
+        AUTO_CYCLE_TIME -= 1000;
+        Serial.print("Auto Cycle time: ");
+        Serial.println(AUTO_CYCLE_TIME);
         break;
     }
     // Reset IR value
