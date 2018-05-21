@@ -452,3 +452,9 @@ void LED::autoCycle(long interval, bool povMode) {
   }
 }
 
+void LED::quickFlash(int r, int g, int b) {
+  for(uint16_t i = 0; i < NUM_LEDS; i++) {
+    setPixel(i, r, g, b);
+  }
+  showStrip();
+}

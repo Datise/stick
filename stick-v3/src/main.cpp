@@ -162,9 +162,16 @@ bool changeMode() {
         break;
       case BTN_AUTO:
       case BTN_AUTO_2:
+        
         autoCycleOn = !autoCycleOn;
 
-        autoCycleOn ? Serial.println("Auto Cycle On") : Serial.println("Auto Cycle Off");
+        if (autoCycleOn) {
+          Serial.println("Auto Cycle On");
+          led.quickFlash(0, 255, 0); // flash green
+        } else {
+          Serial.println("Auto Cycle Off");
+          led.quickFlash(255, 0, 0); // flash red
+        }
         // Serial.println("Toggle auto cycle");
         break;
       case BTN_BLUE_UP:

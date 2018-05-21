@@ -38,7 +38,8 @@ class LED {
     void theaterChaseRainbow(uint8_t wait, bool (*IR_Interrupt)(void));
     void flash2(uint8_t wait, bool (*IR_Interrupt)(void));
     void flash3(uint8_t wait, bool (*IR_Interrupt)(void));
-    
+    void quickFlash(int r, int g, int b);
+
     // State
     uint8_t patternNumber;
     uint8_t speed;
