@@ -54,7 +54,7 @@ DotSD dotSD;
 
 int AUTO_CYCLE_TIME = 7000;
 
-boolean povMode = false;
+boolean povMode = true;
 int patternNum = 0;
 bool autoCycleOn = true;
 
@@ -78,7 +78,7 @@ void prevPressed() {
 
 void showMode() {
    if (autoCycleOn) {
-    led.autoCycle(AUTO_CYCLE_TIME);
+    led.autoCycle(AUTO_CYCLE_TIME, povMode);
   }
 
   if (povMode) {

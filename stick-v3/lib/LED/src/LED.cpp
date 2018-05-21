@@ -317,15 +317,11 @@ void LED::flash3(uint8_t wait, bool (*IR_Interrupt)(void)) {
 
 //--- POV ---
 void LED::imageInit() { // Initialize global image state for current imageNumber
-  imageType    = pgm_read_byte(&images[imageNumber].type);
-  #ifdef __AVR_ATtiny85__
-    imageLines   = pgm_read_byte(&images[imageNumber].lines);
-  #else
-    imageLines   = pgm_read_word(&images[imageNumber].lines);
-  #endif
+  imageType    = images[imageNumber].type;
+  imageLines   = images[imageNumber].lines;
   imageLine    = 0;
-  imagePalette = (uint8_t *)pgm_read_word(&images[imageNumber].palette);
-  imagePixels  = (uint8_t *)pgm_read_word(&images[imageNumber].pixels);
+  imagePalette = (uint8_t *)images[imageNumber].palette;
+  imagePixels  = (uint8_t *)images[imageNumber].pixels;
   // 1- and 4-bit images have their color palette loaded into RAM both for
   // faster access and to allow dynamic color changing.  Not done w/8-bit
   // because that would require inordinate RAM (328P could handle it, but
@@ -446,13 +442,13 @@ void LED::slower() {
   Serial.println(speed);
 }
 
-unsigned long previousMillis = 0;  
-void LED::autoCycle(long interval) {
+unsigned long previousMillis = 0;
+void LED::autoCycle(long interval, bool povMode) {
   unsigned long currentMillis = millis();
 
   if (currentMillis - previousMillis >= interval) {
     previousMillis = currentMillis;
-    nextPattern();
+    povMode ? nextImage() : nextPattern();
   }
 }
 

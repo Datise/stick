@@ -52,7 +52,7 @@ class LED {
     void decreaseBrightness();
     void faster();
     void slower();
-    void autoCycle(long interval);
+    void autoCycle(long interval, bool povMode);
     
   private:
     // Util
@@ -60,7 +60,7 @@ class LED {
     void setPixel(int pixelNum, int r, int g, int b);
     void showStrip();
     uint32_t Wheel(byte WheelPos);
-    void timeLoop (long int startMillis, long int interval);
+    void timeLoop(long int startMillis, long int interval);
 
     // POV
     void imageInit();
