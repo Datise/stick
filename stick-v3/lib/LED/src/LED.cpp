@@ -45,7 +45,8 @@ LED::LED() {};
 
 void LED::init() {
   if (LED_DEBUG) Serial.println("Init FastLED");
-  FastLED.addLeds<APA102, LED_DATA_PIN, LED_CLOCK_PIN, BGR>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
+  // FastLED.addLeds<APA102, LED_DATA_PIN, LED_CLOCK_PIN, BGR>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
+   FastLED.addLeds<APA102, LED_DATA_PIN, LED_CLOCK_PIN, BGR, DATA_RATE_MHZ(6)>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip); //poi
 
   patternNumber = DEFAULT_PATTERN_NUM;
   speed = DEFAULT_SPEED;
@@ -57,7 +58,7 @@ void LED::init() {
   imageInit(); // Initialize pointers for default image
 }
 
-// Utility
+//
 void LED::setPixel(int pixelNum, uint32_t c) {
    leds[pixelNum] = c;
 }
