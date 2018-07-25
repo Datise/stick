@@ -147,6 +147,7 @@ print "#define PALETTE8  2"
 print "#define TRUECOLOR 3"
 print
 print "#define NUM_LEDS %d" % numLEDs
+print "typedef uint16_t line_t;"
 print
 
 # Second pass estimates current of each column, then peak & overall average
