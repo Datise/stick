@@ -39,6 +39,7 @@ class LED {
     void flash2(uint8_t wait, bool (*IR_Interrupt)(void));
     void flash3(uint8_t wait, bool (*IR_Interrupt)(void));
     void quickFlash(int r, int g, int b);
+    void blueGreenPurp(uint8_t speed); //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Kellen test~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     // State
     uint8_t patternNumber;

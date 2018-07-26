@@ -23,7 +23,7 @@ const int DEFAULT_SPEED = 16;
 const int MAX_SPEED = 64;
 
 const int DEFAULT_PATTERN_NUM = 0;
-const String patterns[] = {"flash3", "doubleCoverge", "theaterChaseRainbow", "sparkle", "cylon", "theaterChase", "doubleConvergeNoTrail", "flash2", "fire"};
+const String patterns[] = {"flash3", "doubleCoverge", "theaterChaseRainbow", "sparkle", "cylon", "theaterChase", "doubleConvergeNoTrail", "flash2", "fire", "blueGreenPurp"};
 const int numPatterns = sizeof(patterns) / sizeof(String);
 
 unsigned long time_now = 0;
@@ -99,6 +99,31 @@ void LED::convergeIn() {
     // now, let's first 20 leds to the top 20 leds, 
     leds(NUM_LEDS/2,NUM_LEDS-1) = leds(NUM_LEDS/2 - 1 ,0);
     FastLED.delay(35);
+  }
+}
+void LED::blueGreenPurp(uint8_t speed){ //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Kellen test~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  for(int i = 0; i < NUM_LEDS; i++){
+  setPixel(i, 0, 0, 255);
+  showStrip();
+  FastLED.delay(speed);
+  leds.fadeToBlackBy(40);
+  showStrip();
+  }
+
+  for(int i = 0; i < NUM_LEDS; i++){
+  setPixel(i, 0, 255, 0);
+  showStrip();
+  FastLED.delay(speed);
+  leds.fadeToBlackBy(40);
+  showStrip();
+  }
+
+  for(int i = 0; i < NUM_LEDS; i++){
+  setPixel(i, 225, 0, 225);
+  showStrip();
+  FastLED.delay(speed);
+  leds.fadeToBlackBy(40);
+  showStrip();
   }
 }
 
@@ -444,6 +469,7 @@ void LED::slower() {
 }
 
 unsigned long previousMillis = 0;
+
 void LED::autoCycle(long interval, bool povMode) {
   unsigned long currentMillis = millis();
 
@@ -458,4 +484,19 @@ void LED::quickFlash(int r, int g, int b) {
     setPixel(i, r, g, b);
   }
   showStrip();
+  FastLED.delay(140);
+  for(int i = 0; i < NUM_LEDS; i++) {
+    setPixel(i, 0, 0, 0);
+    showStrip();
+  }
+  FastLED.delay(100);
+  for(uint16_t i = 0; i < NUM_LEDS; i++) {
+    setPixel(i, r, g, b);
+  }
+  showStrip();
+  FastLED.delay(100);
+  for(int i = 0; i < NUM_LEDS; i++) {
+    setPixel(i, 0, 0, 0);
+    showStrip();
+  }
 }

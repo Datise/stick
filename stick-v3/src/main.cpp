@@ -56,7 +56,7 @@ int AUTO_CYCLE_TIME = 7000;
 
 boolean povMode = true;
 int patternNum = 0;
-bool autoCycleOn = true;
+bool autoCycleOn = false;
 
 
 bool changeMode();
@@ -111,6 +111,9 @@ void showMode() {
         break;
       case 8:
         led.fire(50, 80, led.speed);
+        break;
+      case 9: //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Kellen test
+        led.blueGreenPurp(led.speed);
         break;
     }
   }
@@ -167,10 +170,10 @@ bool changeMode() {
 
         if (autoCycleOn) {
           Serial.println("Auto Cycle On");
-          led.quickFlash(0, 255, 0); // flash green
+          led.quickFlash(0, 70, 0); // flash green
         } else {
           Serial.println("Auto Cycle Off");
-          led.quickFlash(255, 0, 0); // flash red
+          led.quickFlash(70, 0, 0); // flash red
         }
         // Serial.println("Toggle auto cycle");
         break;
