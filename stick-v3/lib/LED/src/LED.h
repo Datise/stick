@@ -8,15 +8,15 @@
 // #define LED_DATA_PIN  32
 // #define LED_CLOCK_PIN 33
 
-// 72 pixel South America
+// // 72 pixel South America
 #define NUM_LEDS 72
 #define LED_DATA_PIN  22
 #define LED_CLOCK_PIN 20
 
 // 22 pixel
 // #define NUM_LEDS 22
-// #define LED_DATA_PIN  7
-// #define LED_CLOCK_PIN 10
+// #define LED_DATA_PIN  22
+// #define LED_CLOCK_PIN 20
 
 #define LED_DEBUG false
 
@@ -39,7 +39,8 @@ class LED {
     void theaterChaseRainbow(uint8_t wait, bool (*IR_Interrupt)(void));
     void flash2(uint8_t wait, bool (*IR_Interrupt)(void));
     void flash3(uint8_t wait, bool (*IR_Interrupt)(void));
-    
+    void quickFlash(int r, int g, int b);
+
     // State
     uint8_t patternNumber;
     uint8_t speed;
@@ -54,6 +55,7 @@ class LED {
     void faster();
     void slower();
     void fadeall();
+    void autoCycle(long interval, bool povMode);
     
   private:
     // Util
@@ -61,7 +63,7 @@ class LED {
     void setPixel(int pixelNum, int r, int g, int b);
     void showStrip();
     uint32_t Wheel(byte WheelPos);
-    void timeLoop (long int startMillis, long int interval);
+    void timeLoop(long int startMillis, long int interval);
 
     // POV
     void imageInit();

@@ -113,7 +113,7 @@ void DotSD::printDirectory(File dir, int numTabs) {
 
   // root.openRoot(volume);
   // root.ls(LS_R | LS_DATE | LS_SIZE);
-
+  Serial.println("DotSD: Print Directory");
   dir.rewindDirectory();
 
   while(true) {
