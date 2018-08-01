@@ -105,11 +105,13 @@ void DotSD::openDirectory(char* dir){
 
 }
 
-void DotSD::printDirectory(File dir, int numTabs) {
+void DotSD::printDirectory(char* directory, int numTabs) {
   // if (!volume.init(card)) {
   //   Serial.println("Could not find FAT16/FAT32 partition.\nMake sure you've formatted the card");
   //   return;
   // }
+
+  File dir = SD.open(directory);
 
   // root.openRoot(volume);
   // root.ls(LS_R | LS_DATE | LS_SIZE);
@@ -130,7 +132,7 @@ void DotSD::printDirectory(File dir, int numTabs) {
     Serial.print(entry.name());
     if (entry.isDirectory()) {
       Serial.println("/");
-      printDirectory(entry, numTabs+1);
+      printDirectory(entry.name(), numTabs+1);
     } else {
       // files have sizes, directories do not
       Serial.print("\t\t");
@@ -180,7 +182,9 @@ DotSD::BmpImage DotSD::readBmp(const char *filename) {
   int imageidx = 0;
 
   Serial.println("TESTING: ");
-  Serial.println(bmpFile.name());
+  // Serial.println(bmpFile.name());
+
+  File bmpFile = SD.open(filename);
 
   // Open requested file on SD card
   // bmpFile = SD.open(filename);
@@ -281,6 +285,8 @@ DotSD::BmpImage DotSD::readBmp(const char *filename) {
             //we need to output BRG 24bit colour//
             // povbuffer[povidx++] = (b << 16) + (g << 8) + r;
             int rgb = ((long)b << 16L) | ((long)g << 8L) | (long)r;
+            // Serial.println(rgb, HEX);
+            // Serial.println();
             image_buffer[imageidx++] = rgb;
 
             // Serial.println(rgb);

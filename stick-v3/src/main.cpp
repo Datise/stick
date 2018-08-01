@@ -61,7 +61,6 @@ int AUTO_CYCLE_TIME = 7000;
 int patternNum = 0;
 bool autoCycleOn = true;
 
-
 DotSD::BmpImage bmpImage;
 
 bool changeMode();
@@ -72,14 +71,22 @@ void setup() {
   ir.setup(digitalPinToInterrupt(5), []{changeMode();}, FALLING);
   led.init();
   dotSD.init();
+
+  delay(2000);
 }
 
 void nextPressed() {
-  (povMode) ? led.nextImage() : led.nextPattern();
+  if (bmpImage.image_array) {
+    return;
+  }
+  (povMode) ? led.nextImage(bmpImage.image_array, bmpImage.w) : led.nextPattern();
 }
 
 void prevPressed() {
-  (povMode) ? led.prevImage() : led.prevPattern();
+  if (bmpImage.image_array) {
+    return;
+  }
+  (povMode) ? led.prevImage(bmpImage.image_array, bmpImage.w) : led.prevPattern();
 }
 
 void showMode() {
@@ -88,8 +95,11 @@ void showMode() {
   }
 
   if (povMode) {
-    led.pov();
     // led.PoiSonic(2000, bmpImage.image_array, bmpImage.w);
+    if (bmpImage.image_array) {
+      led.pov();
+    }
+    // led.pov();
   } else {
     switch(led.patternNumber) {
       case 0:
@@ -159,19 +169,22 @@ bool changeMode() {
         break;
       case BTN_DIR1:
       case BTN_DIR1_2:
-        dotSD.printDirectory(dotSD.root, 0);
+        // dotSD.printDirectory("dots", 0);
         // dotSD.root.openNextFile()
 
         // Serial.println("Test file:");
         // dotSD.printFile("porn_letters.bmp");
         if (!isOpen) {
           // Serial.println("POV1");
-          // bmpImage = dotSD.readBmp("/");
+          bmpImage = dotSD.readBmp("/DOTS/SHAM.BMP");
+          led.imageInit(bmpImage.image_array, bmpImage.w);
           // Serial.println("POV2");
+
+          // Serial.println(bmpImage.)
           povMode = true;
           isOpen = true;
         }
-        // led.PoiSonic(200, povbuffer);
+        // led.PoiSonic(200, pineapple, 150);
         // bmpFile.close();
         break;
       case BTN_AUTO:

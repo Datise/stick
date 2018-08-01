@@ -45,8 +45,8 @@ LED::LED() {};
 
 void LED::init() {
   if (LED_DEBUG) Serial.println("Init FastLED");
-  // FastLED.addLeds<APA102, LED_DATA_PIN, LED_CLOCK_PIN, BGR>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
-   FastLED.addLeds<APA102, LED_DATA_PIN, LED_CLOCK_PIN, BGR, DATA_RATE_MHZ(6)>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip); //poi
+  FastLED.addLeds<APA102, LED_DATA_PIN, LED_CLOCK_PIN, BGR>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
+  //  FastLED.addLeds<APA102, LED_DATA_PIN, LED_CLOCK_PIN, BGR, DATA_RATE_MHZ(6)>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip); //poi
 
   patternNumber = DEFAULT_PATTERN_NUM;
   speed = DEFAULT_SPEED;
@@ -55,7 +55,7 @@ void LED::init() {
 
   if (LED_DEBUG) Serial.println("FastLED Ready");
 
-  imageInit(); // Initialize pointers for default image
+  // imageInit(); // Initialize pointers for default image
 }
 
 //
@@ -317,12 +317,15 @@ void LED::flash3(uint8_t wait, bool (*IR_Interrupt)(void)) {
 }
 
 //--- POV ---
-void LED::imageInit() { // Initialize global image state for current imageNumber
-  imageType    = images[imageNumber].type;
-  imageLines   = images[imageNumber].lines;
+void LED::imageInit(unsigned int* image_array, int w) { // Initialize global image state for current imageNumber
+  // imageType    = images[imageNumber].type;
+  imageType = TRUECOLOR;
+  // imageLines   = images[imageNumber].lines;
+  imageLines = w;
   imageLine    = 0;
-  imagePalette = (uint8_t *)images[imageNumber].palette;
-  imagePixels  = (uint8_t *)images[imageNumber].pixels;
+  // imagePalette = (uint8_t *)images[imageNumber].palette;
+  imagePalette = NULL;
+  // imagePixels  = (uint8_t *)images[imageNumber].pixels;
   // 1- and 4-bit images have their color palette loaded into RAM both for
   // faster access and to allow dynamic color changing.  Not done w/8-bit
   // because that would require inordinate RAM (328P could handle it, but
@@ -400,14 +403,14 @@ void LED::pov() {
   lastLineTime = t + 100;
 }
 
-void LED::nextImage(void) {
+void LED::nextImage(unsigned int* image_array, int w) {
   if(++imageNumber >= NUM_IMAGES) imageNumber = 0;
-  imageInit();
+  imageInit(image_array, w);
 }
 
-void LED::prevImage(void) {
+void LED::prevImage(unsigned int* image_array, int w) {
   imageNumber = imageNumber ? imageNumber - 1 : NUM_IMAGES - 1;
-  imageInit();
+  imageInit(image_array, w);
 }
 
 void LED::nextPattern() {
@@ -475,7 +478,7 @@ void LED::autoCycle(long interval, bool povMode) {
 
   if (currentMillis - previousMillis >= interval) {
     previousMillis = currentMillis;
-    povMode ? nextImage() : nextPattern();
+    // povMode ? nextImage() : nextPattern();
   }
 }
 

@@ -20,7 +20,7 @@ class DotSD {
 
     void cardInfo();
     void openDirectory(char* dir);
-    void printDirectory(File dir, int numTabs);
+    void printDirectory(char* directory, int numTabs);
     BmpImage readBmp(const char *filename);
     void printFile(const char* fileName);
     void getBMPFilenameByIndex(const char *directoryName, int index, char *pnBuffer);

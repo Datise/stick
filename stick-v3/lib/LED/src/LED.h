@@ -46,8 +46,8 @@ class LED {
     uint8_t speed;
 
     // State change
-    void nextImage();
-    void prevImage();
+    void nextImage(unsigned int* image_array, int w);
+    void prevImage(unsigned int* image_array, int w);
     void nextPattern();
     void prevPattern();
     void increaseBrightness();
@@ -57,6 +57,8 @@ class LED {
     void fadeall();
     void autoCycle(long interval, bool povMode);
     
+    // POV
+    void imageInit(unsigned int* image_array, int w);
   private:
     // Util
     void setPixel(int pixelNum, uint32_t c);
@@ -65,8 +67,7 @@ class LED {
     uint32_t Wheel(byte WheelPos);
     void timeLoop(long int startMillis, long int interval);
 
-    // POV
-    void imageInit();
+    
 
     // Fire
     void setPixelHeatColor(int Pixel, byte temperature);
