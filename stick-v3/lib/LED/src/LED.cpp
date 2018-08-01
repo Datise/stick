@@ -1,6 +1,7 @@
 #include <LED.h>
 #include <pov.h>
 #include <FastLED.h>
+#include <Adafruit_DotStar.h>
 
 CRGBArray<NUM_LEDS> leds;
 
@@ -16,13 +17,13 @@ uint8_t  imageNumber   = 0,  // Current image being displayed
 line_t   imageLines,         // Number of lines in active image
          imageLine;          // Current line number in image
   
-const uint8_t PROGMEM brightness[] = { 4, 24, 48, 72,  98, 128, 192, 224, 255 };
+const uint8_t PROGMEM brightness[] = { 4, 24, 48, 72,  98, 128, 192, 255 };
 uint8_t bLevel = 2; // Default brightness level
 
 const int DEFAULT_SPEED = 16;
 const int MAX_SPEED = 64;
 
-const int DEFAULT_PATTERN_NUM = 0;
+const int DEFAULT_PATTERN_NUM = 8;
 const String patterns[] = {"flash3", "doubleCoverge", "theaterChaseRainbow", "sparkle", "cylon", "theaterChase", "doubleConvergeNoTrail", "flash2", "fire", "blueGreenPurp"};
 const int numPatterns = sizeof(patterns) / sizeof(String);
 
@@ -43,34 +44,60 @@ uint32_t lineInterval      = 1000000L /  595;
 
 LED::LED() {};
 
+bool fastledset = false;
+
+Adafruit_DotStar strip = Adafruit_DotStar(
+  NUM_LEDS, LED_DATA_PIN, LED_CLOCK_PIN, DOTSTAR_BGR );
+
 void LED::init() {
   if (LED_DEBUG) Serial.println("Init FastLED");
-  // FastLED.addLeds<APA102, LED_DATA_PIN, LED_CLOCK_PIN, BGR>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
-   FastLED.addLeds<APA102, LED_DATA_PIN, LED_CLOCK_PIN, BGR, DATA_RATE_MHZ(6)>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip); //poi
+  //  FastLED.addLeds<APA102, LED_DATA_PIN, LED_CLOCK_PIN, BGR, DATA_RATE_MHZ(48)>(leds, NUM_LEDS);
+  // FastLED.addLeds<APA102, LED_DATA_PIN, LED_CLOCK_PIN, BGR>(leds, NUM_LEDS);
+  //  FastLED.addLeds<APA102, LED_DATA_PIN, LED_CLOCK_PIN, BGR, DATA_RATE_MHZ(6)>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip); //poi
+
+
 
   patternNumber = DEFAULT_PATTERN_NUM;
   speed = DEFAULT_SPEED;
-
-  FastLED.setBrightness(brightness[bLevel]);
-
+  
+  // FastLED.setDither(false);
+  // FastLED.setBrightness(brightness[bLevel]);
+  
   if (LED_DEBUG) Serial.println("FastLED Ready");
 
   imageInit(); // Initialize pointers for default image
+  strip.begin(); // Initialize pins for output
+  strip.show();  // Turn all LEDs off ASAP
+
+  strip.setBrightness(64);
 }
 
 //
 void LED::setPixel(int pixelNum, uint32_t c) {
-   leds[pixelNum] = c;
+   if (fastledset) {
+    leds[pixelNum] = c;
+  } else {
+    strip.setPixelColor(pixelNum, c);
+  }
 }
 
 void LED::setPixel(int pixelNum, int r, int g, int b) {
-  leds[pixelNum].r = r;
-  leds[pixelNum].g = g;
-  leds[pixelNum].b = b;
+  if (fastledset) {
+    leds[pixelNum].r = r;
+    leds[pixelNum].g = g;
+    leds[pixelNum].b = b;
+  } else {
+    strip.setPixelColor(pixelNum, r, g, b);
+  }
 }
 
  void LED::showStrip() {
-  FastLED.show();
+  
+  if (fastledset) {
+    FastLED.show();
+  } else {
+    strip.show();
+  }
 }
 
 uint32_t LED::Wheel(byte WheelPos) {
@@ -421,7 +448,8 @@ void LED::pov() {
 
   while(((t = micros()) - lastLineTime) < lineInterval) {}
 
-  FastLED.show();
+  // FastLED.show();
+  showStrip();
   lastLineTime = t + 100;
 }
 
@@ -449,11 +477,17 @@ void LED::prevPattern() {
 }
 
 void LED::increaseBrightness() {
-  if(bLevel < (sizeof(brightness) - 1)) FastLED.setBrightness(brightness[++bLevel]);
+  if(bLevel < (sizeof(brightness) - 1)) {
+    fastledset ? FastLED.setBrightness(brightness[++bLevel]) : strip.setBrightness(brightness[++bLevel]);
+  }
+  Serial.println(brightness[bLevel]);
 }
 
 void LED::decreaseBrightness() {
-  if(bLevel) FastLED.setBrightness(brightness[--bLevel]);
+  if(bLevel) {
+    fastledset ? FastLED.setBrightness(brightness[--bLevel]) : strip.setBrightness(brightness[--bLevel]);
+  }
+  Serial.println(brightness[bLevel]);
 }
 
 void LED::faster() {

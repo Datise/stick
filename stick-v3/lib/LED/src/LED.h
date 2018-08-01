@@ -14,7 +14,12 @@
 // #define LED_CLOCK_PIN 20
 
 // 22 pixel
-#define NUM_LEDS 22
+// #define NUM_LEDS 22
+// #define LED_DATA_PIN  22
+// #define LED_CLOCK_PIN 20
+
+// 128 pixel
+#define NUM_LEDS 128
 #define LED_DATA_PIN  22
 #define LED_CLOCK_PIN 20
 

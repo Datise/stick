@@ -54,7 +54,7 @@ DotSD dotSD;
 
 int AUTO_CYCLE_TIME = 7000;
 
-boolean povMode = true;
+boolean povMode = false;
 int patternNum = 0;
 bool autoCycleOn = false;
 
