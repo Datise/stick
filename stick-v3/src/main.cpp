@@ -95,11 +95,13 @@ void showMode() {
   }
 
   if (povMode) {
+    // led.PoiSonic(200, green_mush, 72);
     // led.PoiSonic(2000, bmpImage.image_array, bmpImage.w);
     if (bmpImage.image_array) {
-      led.pov();
+      // led.pov();
+      led.PoiSonic(200, bmpImage.image_array, bmpImage.w);
     }
-    // led.pov();
+    // // led.pov();
   } else {
     switch(led.patternNumber) {
       case 0:
@@ -169,7 +171,7 @@ bool changeMode() {
         break;
       case BTN_DIR1:
       case BTN_DIR1_2:
-        // dotSD.printDirectory("dots", 0);
+        dotSD.printDirectory("dots", 0);
         // dotSD.root.openNextFile()
 
         // Serial.println("Test file:");
